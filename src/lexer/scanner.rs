@@ -16,6 +16,7 @@ enum Number {
 }
 
 impl Scanner {
+    // returns a new instance, C'tor
     pub fn new(input: &str) -> Self {
         let mut scanner = Self {
             input: input.chars().collect(),
@@ -29,21 +30,8 @@ impl Scanner {
         return scanner;
     }
 
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, XtaError> {
-        let mut tokens: Vec<Token> = Vec::<Token>::new();
-        let mut token = Token::Illegal;
-        while token != Token::EOF {
-            token = self.next();
-            tokens.push(token.clone());
-        }
-
-        Ok(tokens)
-    }
-}
-
-// implementation for private functions
-impl Scanner {
-    fn next(&mut self) -> Token {
+    // returns the next token
+    pub fn next(&mut self) -> Token {
         let mut token: Token = Token::Illegal;
 
         self.ignore_whitespace();
@@ -101,6 +89,12 @@ impl Scanner {
                     } else {
                         token = Token::Identifier(id);
                     }
+                } else if self.curr.is_numeric() {
+                    token = match self.get_number() {
+                        Ok(Number::Double(d)) => Token::Double(d),
+                        Ok(Number::Int(d)) => Token::Integer(d),
+                        Err(_) => Token::Illegal,
+                    };
                 }
             }
         }
@@ -108,7 +102,11 @@ impl Scanner {
         self.advance();
         return token;
     }
+}
 
+// implementation for private functions
+impl Scanner {
+    // eats up
     fn ignore_whitespace(&mut self) {
         while self.curr == ' ' || self.curr == '\n' || self.curr == '\t' {
             if self.curr == '\n' {
@@ -121,11 +119,7 @@ impl Scanner {
 
     // moves to the next char
     fn advance(&mut self) {
-        if self.offset >= self.input.len() {
-            self.curr = '\0';
-        } else {
-            self.curr = self.input[self.offset];
-        }
+        self.curr = self.peek();
 
         self.position = self.offset;
         self.offset += 1;
@@ -193,7 +187,5 @@ impl Scanner {
                 .map(Number::Int)
                 .map_err(|_| XtaError::InvalidNumberFormat(num_str))
         }
-
-        Ok(Number::Int(20))
     }
 }
