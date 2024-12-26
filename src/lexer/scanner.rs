@@ -1,10 +1,9 @@
 use crate::errors::XtaError;
-
 use super::token::Token;
 
-pub struct Scanner {
-    input: Vec<char>, // the input as a vector of chars, since string is kinda shitty
-    position: usize,  // a position that displays the current char
+pub struct Scanner<'a> {
+    input: &'a str, // input is now a string slice
+    position: usize,  // the position that displays the current char
     offset: usize,    // a position of which the next char would be
     line: usize,
     curr: char,
@@ -15,22 +14,22 @@ enum Number {
     Double(f64),
 }
 
-impl Scanner {
+impl<'a> Scanner<'a> {
     // returns a new instance, C'tor
-    pub fn new(input: &str) -> Self {
+    pub fn new(input: &'a str) -> Self {
         let mut scanner = Self {
-            input: input.chars().collect(),
+            input,
             position: 0,
             line: 1,
             offset: 0,
             curr: '\0',
         };
         scanner.advance();
-        return scanner;
+        scanner
     }
 }
 
-impl Iterator for Scanner {
+impl<'a> Iterator for Scanner<'a> {
     type Item = Token;
 
     // returns the next token
@@ -111,7 +110,7 @@ impl Iterator for Scanner {
 }
 
 // implementation for private functions
-impl Scanner {
+impl<'a> Scanner<'a> {
     // eats up white-space
     fn ignore_whitespace(&mut self) {
         while self.curr.is_whitespace() {
@@ -131,11 +130,11 @@ impl Scanner {
     }
 
     // peek next char
-    fn peek(&mut self) -> char {
+    fn peek(&self) -> char {
         if self.offset >= self.input.len() {
             '\0'
         } else {
-            self.input[self.offset]
+            self.input[self.offset..].chars().next().unwrap_or('\0')
         }
     }
 
@@ -146,9 +145,9 @@ impl Scanner {
         }
 
         self.advance();
-
-        let buf = &self.input[begin_pos..self.position];
-        buf.to_vec().iter().collect()
+        
+        // Here we get a slice and convert it to String
+        self.input[begin_pos..self.position].to_string()
     }
 
     fn get_identifier(&mut self) -> String {
@@ -158,13 +157,13 @@ impl Scanner {
         }
 
         self.advance();
-
-        let buf = &self.input[begin_pos..self.position];
-        buf.to_vec().iter().collect()
+        
+        // Here we get a slice and convert it to String
+        self.input[begin_pos..self.position].to_string()
     }
 
     fn get_number(&mut self) -> Result<Number, XtaError> {
-        let mut num_str = String::from("");
+        let mut num_str = String::new();
         let mut is_floating = false;
 
         while self.curr.is_digit(10) || self.curr == '.' {
