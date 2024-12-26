@@ -25,15 +25,17 @@ impl Scanner {
             offset: 0,
             curr: '\0',
         };
-
         scanner.advance();
         return scanner;
     }
+}
+
+impl Iterator for Scanner {
+    type Item = Token;
 
     // returns the next token
-    pub fn next(&mut self) -> Token {
+    fn next(&mut self) -> Option<Token> {
         let mut token: Token = Token::Illegal;
-
         self.ignore_whitespace();
 
         match self.curr {
@@ -46,7 +48,6 @@ impl Scanner {
             '-' => {
                 token = Token::Min;
             }
-
             '*' => {
                 token = Token::Mul;
             }
@@ -89,30 +90,34 @@ impl Scanner {
                     } else {
                         token = Token::Identifier(id);
                     }
+                    return Some(token); // avoid advancing the input, because it has already been advanced in the `get_identifier` function
                 } else if self.curr.is_numeric() {
-                    token = match self.get_number() {
+                    // same as the identifier part, `get_number` advances the token, so no need for it.
+                    return Some(match self.get_number() {
                         Ok(Number::Double(d)) => Token::Double(d),
                         Ok(Number::Int(d)) => Token::Integer(d),
-                        Err(_) => Token::Illegal,
-                    };
+                        Err(e) => {
+                            println!("{}", e);
+                            Token::Illegal
+                        }
+                    });
                 }
             }
         }
 
         self.advance();
-        return token;
+        Some(token)
     }
 }
 
 // implementation for private functions
 impl Scanner {
-    // eats up
+    // eats up white-space
     fn ignore_whitespace(&mut self) {
-        while self.curr == ' ' || self.curr == '\n' || self.curr == '\t' {
+        while self.curr.is_whitespace() {
             if self.curr == '\n' {
                 self.line += 1;
             }
-
             self.advance();
         }
     }

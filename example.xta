@@ -1,3 +1,1 @@
-var = "Hello, World";
-
-print(var);
+var = 24;

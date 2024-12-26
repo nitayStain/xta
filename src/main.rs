@@ -1,33 +1,48 @@
-use std::{env, fs};
+use clap::{Parser, Subcommand};
+use std::{env, fs, path::PathBuf, process::exit};
+use xta::{scanner::Scanner, token::Token, XtaError};
 
-use xta::{scanner::Scanner, XtaError};
-
-fn read_file(file_path: &str) -> Result<String, XtaError> {
-    fs::read_to_string(file_path).map_err(|_| XtaError::FileError(file_path.to_string()))
+#[derive(Parser)]
+#[command(name = "Xta Compiler")]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
 }
 
-fn help() {
-    eprintln!("Usage: <compiler> <file path>");
-    std::process::exit(1);
+#[derive(Subcommand)]
+enum Commands {
+    Build {
+        #[arg(short, long)]
+        path: PathBuf,
+    },
+    // Help,
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        help();
-    }
+    let cli = Cli::parse();
 
-    let file_path = &args[1];
+    match &cli.command {
+        Commands::Build { path } => {
+            if !path.is_file() {
+                eprintln!("Cannot read a directory.");
+                exit(1);
+            }
 
-    let file_content = match read_file(file_path) {
-        Ok(content) => content,
-        Err(err) => {
-            eprintln!("{}", err);
-            help();
-            String::from("")
+            match fs::read_to_string(path) {
+                Ok(content) => {
+                    let mut scanner = Scanner::new(&content);
+
+                    while let Some(token) = scanner.next() {
+                        println!("{:?}", token);
+                        if token == Token::EOF {
+                            break;
+                        }
+                    }
+                }
+                Err(e) => {
+                    println!("Failed to open file: {}", e);
+                }
+            }
         }
-    };
-
-    let mut scanner = Scanner::new(&file_content);
-    println!("{:?}", scanner.tokenize().unwrap());
+    }
 }

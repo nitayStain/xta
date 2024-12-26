@@ -9,7 +9,7 @@ pub enum Token {
 
     Identifier(String),
 
-    // data types
+    // basic data types
     Integer(i32),
     Double(f64),
     String(String),
