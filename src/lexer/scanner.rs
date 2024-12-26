@@ -124,7 +124,7 @@ impl<'a> Iterator for Scanner<'a> {
             _ => {
                 if self.curr.is_alphabetic() {
                     let id = self.get_identifier();
-                    
+
                     if id == "true" || id == "false" {
                         token = Token::Boolean(id == "true");
                     } else {
