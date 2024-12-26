@@ -22,15 +22,22 @@ pub enum Token {
     Min,
     Assign,
 
+    And,
     Not,
+    Or,
     Equals,
     NotEquals,
     Greater,
+    GreaterOrEqu,
+    Lower,
+    LowerOrEqu,
 
     BNot,
     BAnd,
+    BOr,
     Xor,
-    Or,
+    RightSh,
+    LeftSh,
 
     // keywords
     Const,
@@ -54,6 +61,6 @@ pub fn lookup_keyword(identifier: &str) -> Option<Token> {
         "else" => Some(Token::Else),
         "for" => Some(Token::For),
         "loop" => Some(Token::Loop),
-        _ => Some(Token::Illegal),
+        _ => None,
     }
 }

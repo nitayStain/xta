@@ -1,5 +1,5 @@
 use crate::errors::XtaError;
-use super::token::Token;
+use super::token::{lookup_keyword, Token};
 
 pub struct Scanner<'a> {
     input: &'a str, // input is now a string slice
@@ -76,6 +76,46 @@ impl<'a> Iterator for Scanner<'a> {
                     token = Token::Assign;
                 }
             }
+            '!' => {
+                if self.peek() == '=' {
+                    self.advance();
+                    token = Token::NotEquals;
+                } else {
+                    token = Token::Not;
+                }
+            }
+            '~' => {
+                token = Token::BNot;
+            }
+            '^' => {
+                token = Token::Xor;
+            }
+            '|' => {
+                token = match self.peek() {
+                    '|' => Token::Or,
+                    _ => Token::BOr
+                };
+            }
+            '&' => {
+                token = match self.peek() {
+                    '&' => Token::And,
+                    _ => Token::BAnd
+                }
+            }
+            '>' => {
+                token = match self.peek() {
+                    '>' => Token::RightSh,
+                    '=' => Token::GreaterOrEqu,
+                    _ => Token::Greater,
+                };
+            }
+            '<' => {
+                token = match self.peek() {
+                    '<' => Token::LeftSh,
+                    '=' => Token::LowerOrEqu,
+                    _ => Token::Lower,
+                };
+            }
             '"' => {
                 self.advance();
                 let string = self.get_string();
@@ -84,10 +124,14 @@ impl<'a> Iterator for Scanner<'a> {
             _ => {
                 if self.curr.is_alphabetic() {
                     let id = self.get_identifier();
+                    
                     if id == "true" || id == "false" {
                         token = Token::Boolean(id == "true");
                     } else {
-                        token = Token::Identifier(id);
+                        token = match lookup_keyword(id.as_str()) {
+                            Some(keyword) => keyword,
+                            None => Token::Identifier(id)
+                        };
                     }
                     return Some(token); // avoid advancing the input, because it has already been advanced in the `get_identifier` function
                 } else if self.curr.is_numeric() {
