@@ -1,10 +1,10 @@
-use crate::errors::XtaError;
 use super::token::{lookup_keyword, Token};
+use crate::errors::XtaError;
 
 pub struct Scanner<'a> {
-    input: &'a str, // input is now a string slice
-    position: usize,  // the position that displays the current char
-    offset: usize,    // a position of which the next char would be
+    input: &'a str,  // input is now a string slice
+    position: usize, // the position that displays the current char
+    offset: usize,   // a position of which the next char would be
     line: usize,
     curr: char,
 }
@@ -35,7 +35,9 @@ impl<'a> Iterator for Scanner<'a> {
     // returns the next token
     fn next(&mut self) -> Option<Token> {
         let mut token: Token = Token::Illegal;
+
         self.ignore_whitespace();
+        self.ignore_comments();
 
         match self.curr {
             '\0' => {
@@ -93,13 +95,13 @@ impl<'a> Iterator for Scanner<'a> {
             '|' => {
                 token = match self.peek() {
                     '|' => Token::Or,
-                    _ => Token::BOr
+                    _ => Token::BOr,
                 };
             }
             '&' => {
                 token = match self.peek() {
                     '&' => Token::And,
-                    _ => Token::BAnd
+                    _ => Token::BAnd,
                 }
             }
             '>' => {
@@ -130,7 +132,7 @@ impl<'a> Iterator for Scanner<'a> {
                     } else {
                         token = match lookup_keyword(id.as_str()) {
                             Some(keyword) => keyword,
-                            None => Token::Identifier(id)
+                            None => Token::Identifier(id),
                         };
                     }
                     return Some(token); // avoid advancing the input, because it has already been advanced in the `get_identifier` function
@@ -155,7 +157,6 @@ impl<'a> Iterator for Scanner<'a> {
 
 // implementation for private functions
 impl<'a> Scanner<'a> {
-    // eats up white-space
     fn ignore_whitespace(&mut self) {
         while self.curr.is_whitespace() {
             if self.curr == '\n' {
@@ -165,7 +166,18 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    // moves to the next char
+    fn ignore_comments(&mut self) {
+        if !(self.curr == '-' && self.peek() == '-') {
+            return;
+        }
+
+        while self.curr != '\n' && self.peek() != '\0' {
+            self.advance();
+        }
+
+        self.advance();
+    }
+
     fn advance(&mut self) {
         self.curr = self.peek();
 
@@ -173,7 +185,6 @@ impl<'a> Scanner<'a> {
         self.offset += 1;
     }
 
-    // peek next char
     fn peek(&self) -> char {
         if self.offset >= self.input.len() {
             '\0'
@@ -189,8 +200,7 @@ impl<'a> Scanner<'a> {
         }
 
         self.advance();
-        
-        // Here we get a slice and convert it to String
+
         self.input[begin_pos..self.position].to_string()
     }
 
@@ -201,8 +211,7 @@ impl<'a> Scanner<'a> {
         }
 
         self.advance();
-        
-        // Here we get a slice and convert it to String
+
         self.input[begin_pos..self.position].to_string()
     }
 
@@ -223,7 +232,6 @@ impl<'a> Scanner<'a> {
             self.advance();
         }
 
-        // TODO: fix
         if is_floating {
             num_str
                 .parse::<f64>()
