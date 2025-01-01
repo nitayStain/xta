@@ -12,7 +12,7 @@ pub enum Expr {
 
 #[derive(Debug, PartialEq)]
 pub enum Stmt {
-    Let(LetStmt),
+    Variable(VarStmt),
     If(IfStmt),
 }
 
@@ -32,9 +32,10 @@ pub struct UnaryExpr {
 
 // custom statements
 #[derive(Debug, PartialEq)]
-pub struct LetStmt {
+pub struct VarStmt {
     name: String,
     value: Box<Expr>,
+    is_const: bool,
 }
 
 #[derive(Debug, PartialEq)]

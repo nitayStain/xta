@@ -3,26 +3,16 @@ use std::{env, fs, path::PathBuf, process::exit};
 use xta::{scanner::Scanner, token::Token, XtaError};
 
 #[derive(Parser)]
-#[command(name = "Xta Compiler")]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    Build {
-        #[arg(short, long)]
-        path: PathBuf,
-    },
-    // Help,
+#[command(name = "Xta Compiler", version, about, long_about = None)]
+pub enum Cli {
+    Run { path: PathBuf },
 }
 
 fn main() {
     let cli = Cli::parse();
 
-    match &cli.command {
-        Commands::Build { path } => {
+    match cli {
+        Cli::Run { path } => {
             if !path.is_file() {
                 eprintln!("Cannot read a directory.");
                 exit(1);

@@ -9,3 +9,6 @@ pub enum XtaError {
     #[error("XtaErr: Invalid number format - {0}")]
     InvalidNumberFormat(String),
 }
+
+#[derive(Debug, thiserror::Error)]
+pub enum ParserError {}

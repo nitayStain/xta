@@ -1,0 +1,7 @@
+fn main() -> None
+{
+    let i = 752;
+    if(i == 0 && i <= 150) {
+        print("hello");
+    }
+}
