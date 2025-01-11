@@ -1,51 +1,35 @@
+use super::token::{lookup_keyword, Token};
 use crate::errors::XtaError;
 
-use super::token::Token;
-
-pub struct Scanner {
-    input: Vec<char>, // the input as a vector of chars, since string is kinda shitty
-    position: usize,  // a position that displays the current char
-    offset: usize,    // a position of which the next char would be
+pub struct Scanner<'a> {
+    input: &'a str,  // input is now a string slice
+    position: usize, // the position that displays the current char
+    offset: usize,   // a position of which the next char would be
     line: usize,
     curr: char,
 }
 
-enum Number {
-    Int(i32),
-    Double(f64),
-}
-
-impl Scanner {
-    pub fn new(input: &str) -> Self {
+impl<'a> Scanner<'a> {
+    // returns a new instance, C'tor
+    pub fn new(input: &'a str) -> Self {
         let mut scanner = Self {
-            input: input.chars().collect(),
+            input,
             position: 0,
             line: 1,
             offset: 0,
             curr: '\0',
         };
-
         scanner.advance();
-        return scanner;
-    }
-
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, XtaError> {
-        let mut tokens: Vec<Token> = Vec::<Token>::new();
-        let mut token = Token::Illegal;
-        while token != Token::EOF {
-            token = self.next();
-            tokens.push(token.clone());
-        }
-
-        Ok(tokens)
+        scanner
     }
 }
 
-// implementation for private functions
-impl Scanner {
-    fn next(&mut self) -> Token {
-        let mut token: Token = Token::Illegal;
+impl<'a> Iterator for Scanner<'a> {
+    type Item = Token;
 
+    // returns the next token
+    fn next(&mut self) -> Option<Token> {
+        let mut token: Token = Token::Illegal(String::new());
         self.ignore_whitespace();
 
         match self.curr {
@@ -54,11 +38,21 @@ impl Scanner {
             }
             '+' => {
                 token = Token::Plus;
+                if self.peek() == '+' {
+                    self.advance();
+                    token = Token::Inc;
+                }
             }
             '-' => {
                 token = Token::Min;
+                if self.peek() == '>' {
+                    self.advance();
+                    token = Token::ReturnTypeArrow;
+                } else if self.peek() == '-' {
+                    self.advance();
+                    token = Token::Dec;
+                }
             }
-
             '*' => {
                 token = Token::Mul;
             }
@@ -88,68 +82,130 @@ impl Scanner {
                     token = Token::Assign;
                 }
             }
+            '!' => {
+                if self.peek() == '=' {
+                    self.advance();
+                    token = Token::NotEquals;
+                } else {
+                    token = Token::Not;
+                }
+            }
+            '~' => {
+                token = Token::BNot;
+            }
+            '^' => {
+                token = Token::Xor;
+            }
+            '|' => {
+                if self.peek() == '|' {
+                    self.advance();
+                    token = Token::Or;
+                } else {
+                    token = Token::BOr;
+                }
+            }
+            '&' => {
+                if self.peek() == '&' {
+                    self.advance();
+                    token = Token::And;
+                } else {
+                    token = Token::BAnd;
+                }
+            }
+            '>' => {
+                if self.peek() == '>' {
+                    self.advance();
+                    token = Token::RightSh;
+                } else if self.peek() == '=' {
+                    self.advance();
+                    token = Token::GreaterOrEqu;
+                } else {
+                    token = Token::Greater;
+                }
+            }
+            '<' => {
+                if self.peek() == '<' {
+                    self.advance();
+                    token = Token::LeftSh;
+                } else if self.peek() == '=' {
+                    self.advance();
+                    token = Token::LowerOrEqu;
+                } else {
+                    token = Token::Lower;
+                }
+            }
             '"' => {
                 self.advance();
                 let string = self.get_string();
-                token = Token::String(string);
+                token = string;
             }
             _ => {
                 if self.curr.is_alphabetic() {
                     let id = self.get_identifier();
+
                     if id == "true" || id == "false" {
                         token = Token::Boolean(id == "true");
                     } else {
-                        token = Token::Identifier(id);
+                        token = match lookup_keyword(id.as_str()) {
+                            Some(keyword) => keyword,
+                            None => Token::Identifier(id),
+                        };
                     }
+                    return Some(token); // avoid advancing the input, because it has already been advanced when get_identifier is called.
+                } else if self.curr.is_numeric() {
+                    // same as the identifier part, `get_number` advances the token, so no need for it.
+                    return Some(self.get_number());
                 }
             }
         }
 
         self.advance();
-        return token;
+        Some(token)
     }
+}
 
+// implementation for private functions
+impl<'a> Scanner<'a> {
+    // eats up white-space
     fn ignore_whitespace(&mut self) {
-        while self.curr == ' ' || self.curr == '\n' || self.curr == '\t' {
+        while self.curr.is_whitespace() {
             if self.curr == '\n' {
                 self.line += 1;
             }
-
             self.advance();
         }
     }
 
     // moves to the next char
     fn advance(&mut self) {
-        if self.offset >= self.input.len() {
-            self.curr = '\0';
-        } else {
-            self.curr = self.input[self.offset];
-        }
+        self.curr = self.peek();
 
         self.position = self.offset;
         self.offset += 1;
     }
 
     // peek next char
-    fn peek(&mut self) -> char {
+    fn peek(&self) -> char {
         if self.offset >= self.input.len() {
             '\0'
         } else {
-            self.input[self.offset]
+            self.input[self.offset..].chars().next().unwrap_or('\0')
         }
     }
 
-    fn get_string(&mut self) -> String {
+    fn get_string(&mut self) -> Token {
         let begin_pos = self.position;
         while self.peek() != '"' {
             self.advance();
+
+            if self.peek() == '\0' {
+                return Token::Illegal(self.input[begin_pos..self.position].to_string());
+            }
         }
 
         self.advance();
 
-        let buf = &self.input[begin_pos..self.position];
-        buf.to_vec().iter().collect()
+        Token::String(self.input[begin_pos..self.position].to_string())
     }
 
     fn get_identifier(&mut self) -> String {
@@ -160,40 +216,34 @@ impl Scanner {
 
         self.advance();
 
-        let buf = &self.input[begin_pos..self.position];
-        buf.to_vec().iter().collect()
+        self.input[begin_pos..self.position].to_string()
     }
 
-    fn get_number(&mut self) -> Result<Number, XtaError> {
-        let mut num_str = String::from("");
+    fn get_number(&mut self) -> Token {
+        let mut num_str = String::new();
         let mut is_floating = false;
 
         while self.curr.is_digit(10) || self.curr == '.' {
             if self.curr == '.' {
                 if is_floating {
-                    return Err(XtaError::ScannerError(self.curr, self.line));
+                    return Token::Illegal(num_str);
                 }
-
                 is_floating = true;
             }
-
             num_str.push(self.curr);
             self.advance();
         }
 
-        // TODO: fix
         if is_floating {
-            num_str
-                .parse::<f64>()
-                .map(Number::Double)
-                .map_err(|_| XtaError::InvalidNumberFormat(num_str))
+            match num_str.parse::<f64>() {
+                Ok(value) => Token::Double(value),
+                Err(_) => Token::Illegal(num_str),
+            }
         } else {
-            num_str
-                .parse::<i32>()
-                .map(Number::Int)
-                .map_err(|_| XtaError::InvalidNumberFormat(num_str))
+            match num_str.parse::<i32>() {
+                Ok(value) => Token::Integer(value),
+                Err(_) => Token::Illegal(num_str),
+            }
         }
-
-        Ok(Number::Int(20))
     }
 }
