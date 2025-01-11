@@ -3,7 +3,7 @@ use std::{env, fs, path::PathBuf, process::exit};
 use xta::{scanner::Scanner, token::Token, XtaError};
 
 #[derive(Parser)]
-#[command(name = "Xta Compiler", version, about, long_about = None)]
+#[command(name = "Xta", version, about, long_about = None)]
 pub enum Cli {
     Run { path: PathBuf },
 }
