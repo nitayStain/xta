@@ -1,8 +1,8 @@
-use crate::{scanner::Scanner, token::Token};
+use crate::{scanner::Scanner, token::TokenKind};
 
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
-    token: Option<Token>,
+    token: Option<TokenKind>,
 }
 
 impl<'a> Parser<'a> {

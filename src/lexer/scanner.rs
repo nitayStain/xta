@@ -1,4 +1,4 @@
-use super::token::{lookup_keyword, Token};
+use super::token::{lookup_keyword, Loc, Token, TokenKind};
 use crate::errors::XtaError;
 
 pub struct Scanner<'a> {
@@ -15,7 +15,7 @@ impl<'a> Scanner<'a> {
         let mut scanner = Self {
             input,
             position: 0,
-            line: 1,
+            line: 0,
             offset: 0,
             curr: '\0',
         };
@@ -29,143 +29,156 @@ impl<'a> Iterator for Scanner<'a> {
 
     // returns the next token
     fn next(&mut self) -> Option<Token> {
-        let mut token: Token = Token::Illegal(String::new());
+        let mut token: TokenKind = TokenKind::Illegal(String::new());
+        let mut loc = self.get_loc();
+        let mut content = "";
         self.ignore_whitespace();
 
         match self.curr {
             '\0' => {
-                token = Token::EOF;
+                token = TokenKind::EOF;
             }
             '+' => {
-                token = Token::Plus;
+                token = TokenKind::Plus;
                 if self.peek() == '+' {
                     self.advance();
-                    token = Token::Inc;
+                    token = TokenKind::Inc;
                 }
             }
             '-' => {
-                token = Token::Min;
+                token = TokenKind::Min;
                 if self.peek() == '>' {
                     self.advance();
-                    token = Token::ReturnTypeArrow;
+                    token = TokenKind::ReturnTypeArrow;
                 } else if self.peek() == '-' {
                     self.advance();
-                    token = Token::Dec;
+                    token = TokenKind::Dec;
                 }
             }
             '*' => {
-                token = Token::Mul;
+                token = TokenKind::Mul;
             }
             '/' => {
-                token = Token::Div;
+                token = TokenKind::Div;
             }
             '(' => {
-                token = Token::LeftParen;
+                token = TokenKind::LeftParen;
             }
             ')' => {
-                token = Token::RightParen;
+                token = TokenKind::RightParen;
             }
             ';' => {
-                token = Token::Semicolon;
+                token = TokenKind::Semicolon;
             }
             '{' => {
-                token = Token::LeftBrace;
+                token = TokenKind::LeftBrace;
             }
             '}' => {
-                token = Token::RightBrace;
+                token = TokenKind::RightBrace;
             }
             '=' => {
                 if self.peek() == '=' {
                     self.advance();
-                    token = Token::Equals;
+                    token = TokenKind::Equals;
                 } else {
-                    token = Token::Assign;
+                    token = TokenKind::Assign;
                 }
             }
             '!' => {
                 if self.peek() == '=' {
                     self.advance();
-                    token = Token::NotEquals;
+                    token = TokenKind::NotEquals;
                 } else {
-                    token = Token::Not;
+                    token = TokenKind::Not;
                 }
             }
             '~' => {
-                token = Token::BNot;
+                token = TokenKind::BNot;
             }
             '^' => {
-                token = Token::Xor;
+                token = TokenKind::Xor;
             }
             '|' => {
                 if self.peek() == '|' {
                     self.advance();
-                    token = Token::Or;
+                    token = TokenKind::Or;
                 } else {
-                    token = Token::BOr;
+                    token = TokenKind::BOr;
                 }
             }
             '&' => {
                 if self.peek() == '&' {
                     self.advance();
-                    token = Token::And;
+                    token = TokenKind::And;
                 } else {
-                    token = Token::BAnd;
+                    token = TokenKind::BAnd;
                 }
             }
             '>' => {
                 if self.peek() == '>' {
                     self.advance();
-                    token = Token::RightSh;
+                    token = TokenKind::RightSh;
                 } else if self.peek() == '=' {
                     self.advance();
-                    token = Token::GreaterOrEqu;
+                    token = TokenKind::GreaterOrEqu;
                 } else {
-                    token = Token::Greater;
+                    token = TokenKind::Greater;
                 }
             }
             '<' => {
                 if self.peek() == '<' {
                     self.advance();
-                    token = Token::LeftSh;
+                    token = TokenKind::LeftSh;
                 } else if self.peek() == '=' {
                     self.advance();
-                    token = Token::LowerOrEqu;
+                    token = TokenKind::LowerOrEqu;
                 } else {
-                    token = Token::Lower;
+                    token = TokenKind::Lower;
                 }
             }
             '"' => {
                 self.advance();
                 let string = self.get_string();
                 token = string;
+                
             }
             _ => {
                 if self.curr.is_alphabetic() {
                     let id = self.get_identifier();
 
                     if id == "true" || id == "false" {
-                        token = Token::Boolean(id == "true");
+                        token = TokenKind::Boolean(id == "true");
                     } else {
                         token = match lookup_keyword(id.as_str()) {
                             Some(keyword) => keyword,
-                            None => Token::Identifier(id),
+                            None => TokenKind::Identifier(id),
                         };
                     }
-                    return Some(token); // avoid advancing the input, because it has already been advanced when get_identifier is called.
+                    return Some(Token::new(token, loc)); // avoid advancing the input, because it has already been advanced when get_identifier is called.
                 } else if self.curr.is_numeric() {
                     // same as the identifier part, `get_number` advances the token, so no need for it.
-                    return Some(self.get_number());
+                    return Some(Token::new(self.get_number(), loc));
+                } else {
+                    token = TokenKind::Illegal(self.curr.to_string());
                 }
             }
         }
 
         self.advance();
-        Some(token)
+        Some(Token::new(token, loc))
     }
 }
 
 // implementation for private functions
 impl<'a> Scanner<'a> {
+
+    fn get_loc(&mut self) -> Loc {
+        Loc {
+            col: self.position as u32,
+            row: self.line as u32,
+        }
+    }
+
     // eats up white-space
     fn ignore_whitespace(&mut self) {
         while self.curr.is_whitespace() {
@@ -193,19 +206,19 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn get_string(&mut self) -> Token {
+    fn get_string(&mut self) -> TokenKind {
         let begin_pos = self.position;
         while self.peek() != '"' {
             self.advance();
 
             if self.peek() == '\0' {
-                return Token::Illegal(self.input[begin_pos..self.position].to_string());
+                return TokenKind::Illegal(self.input[begin_pos..self.position].to_string());
             }
         }
 
         self.advance();
 
-        Token::String(self.input[begin_pos..self.position].to_string())
+        TokenKind::String(self.input[begin_pos..self.position].to_string())
     }
 
     fn get_identifier(&mut self) -> String {
@@ -219,14 +232,14 @@ impl<'a> Scanner<'a> {
         self.input[begin_pos..self.position].to_string()
     }
 
-    fn get_number(&mut self) -> Token {
+    fn get_number(&mut self) -> TokenKind {
         let mut num_str = String::new();
         let mut is_floating = false;
 
         while self.curr.is_digit(10) || self.curr == '.' {
             if self.curr == '.' {
                 if is_floating {
-                    return Token::Illegal(num_str);
+                    return TokenKind::Illegal(num_str);
                 }
                 is_floating = true;
             }
@@ -236,13 +249,13 @@ impl<'a> Scanner<'a> {
 
         if is_floating {
             match num_str.parse::<f64>() {
-                Ok(value) => Token::Double(value),
-                Err(_) => Token::Illegal(num_str),
+                Ok(value) => TokenKind::Double(value),
+                Err(_) => TokenKind::Illegal(num_str),
             }
         } else {
             match num_str.parse::<i32>() {
-                Ok(value) => Token::Integer(value),
-                Err(_) => Token::Illegal(num_str),
+                Ok(value) => TokenKind::Integer(value),
+                Err(_) => TokenKind::Illegal(num_str),
             }
         }
     }

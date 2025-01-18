@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use std::{env, fs, path::PathBuf, process::exit};
-use xta::{scanner::Scanner, token::Token, XtaError};
+use xta::{scanner::Scanner, token::TokenKind, XtaError};
 
 #[derive(Parser)]
 #[command(name = "Xta", version, about, long_about = None)]
@@ -24,7 +24,7 @@ fn main() {
 
                     while let Some(token) = scanner.next() {
                         println!("{:?}", token);
-                        if token == Token::EOF {
+                        if token.kind == TokenKind::EOF {
                             break;
                         }
                     }

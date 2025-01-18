@@ -1,5 +1,26 @@
 #[derive(Debug, PartialEq, Clone)]
-pub enum Token {
+pub struct Loc {
+    pub row: u32,
+    pub col: u32
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Token {
+    pub kind: TokenKind,
+    pub loc: Loc,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, loc: Loc) -> Self {
+        Self {
+            kind,
+            loc,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TokenKind {
     // seperators
     Semicolon,
     LeftParen,
@@ -70,32 +91,32 @@ pub enum Token {
     EOF,
 }
 
-pub fn lookup_keyword(identifier: &str) -> Option<Token> {
+pub fn lookup_keyword(identifier: &str) -> Option<TokenKind> {
     match identifier {
-        "const" => Some(Token::Const),
-        "let" => Some(Token::Let),
+        "const" => Some(TokenKind::Const),
+        "let" => Some(TokenKind::Let),
 
-        "if" => Some(Token::If),
-        "elif" => Some(Token::Elif),
-        "else" => Some(Token::Else),
+        "if" => Some(TokenKind::If),
+        "elif" => Some(TokenKind::Elif),
+        "else" => Some(TokenKind::Else),
 
-        "fn" => Some(Token::Fn),
+        "fn" => Some(TokenKind::Fn),
 
-        "for" => Some(Token::For),
+        "for" => Some(TokenKind::For),
 
-        "loop" => Some(Token::Loop),
-        "unless" => Some(Token::Unless),
+        "loop" => Some(TokenKind::Loop),
+        "unless" => Some(TokenKind::Unless),
 
-        "while" => Some(Token::While),
+        "while" => Some(TokenKind::While),
 
-        "break" => Some(Token::Break),
-        "continue" => Some(Token::Continue),
+        "break" => Some(TokenKind::Break),
+        "continue" => Some(TokenKind::Continue),
 
-        "Str" => Some(Token::TypeName(identifier.to_string())),
-        "Int" => Some(Token::TypeName(identifier.to_string())),
-        "Boolean" => Some(Token::TypeName(identifier.to_string())),
-        "Double" => Some(Token::TypeName(identifier.to_string())),
-        "None" => Some(Token::None),
+        "Str" => Some(TokenKind::TypeName(identifier.to_string())),
+        "Int" => Some(TokenKind::TypeName(identifier.to_string())),
+        "Boolean" => Some(TokenKind::TypeName(identifier.to_string())),
+        "Double" => Some(TokenKind::TypeName(identifier.to_string())),
+        "None" => Some(TokenKind::None),
 
         _ => None,
     }

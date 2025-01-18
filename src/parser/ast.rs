@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::token::TokenKind;
 
 pub type Block = Vec<Stmt>;
 
@@ -6,7 +6,7 @@ pub type Block = Vec<Stmt>;
 pub enum Expr {
     Binary(BinaryExpr),
     Unary(UnaryExpr),
-    Literal(Token),
+    Literal(TokenKind),
     Variable(String),
 }
 
@@ -21,13 +21,13 @@ pub enum Stmt {
 pub struct BinaryExpr {
     left: Box<Expr>,
     right: Box<Expr>,
-    operator: Token,
+    operator: TokenKind,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct UnaryExpr {
     operand: Box<Expr>,
-    operator: Token,
+    operator: TokenKind,
 }
 
 // custom statements
