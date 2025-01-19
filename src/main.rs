@@ -21,9 +21,7 @@ fn main() {
             match fs::read_to_string(path) {
                 Ok(content) => {
                     let mut scanner = Scanner::new(&content);
-                    let mut parser = Parser::new(scanner);   
-                    println!("{:?}", parser.parse_statement());
-                    println!("{:?}", parser.parse_statement());
+                    let mut parser = Parser::new(scanner);
                     for error in parser.errors {
                         eprintln!("{}", error);
                     }

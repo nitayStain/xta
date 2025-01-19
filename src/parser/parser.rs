@@ -19,7 +19,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) {} 
 
     pub fn parse_statement(&mut self) -> Option<Stmt> {
         match self.peek().kind {
@@ -80,6 +79,6 @@ impl <'a> Parser <'a> {
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
-    #[error("({loc}) - Expected `{expected}`, found `{found}`")]
+    #[error("~ ({loc}) : Expected `{expected}`, found `{found}`")]
     Expected { loc: Loc, expected: Token, found: Token },
 }
