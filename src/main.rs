@@ -24,7 +24,9 @@ fn main() {
                     let mut parser = Parser::new(scanner);   
                     println!("{:?}", parser.parse_statement());
                     println!("{:?}", parser.parse_statement());
-                    println!("{:?}", parser.errors);
+                    for error in parser.errors {
+                        eprintln!("{}", error);
+                    }
                 }
                 Err(e) => {
                     println!("Failed to open file: {}", e);

@@ -3,9 +3,9 @@ use crate::{scanner::Scanner, token::{Loc, Token, TokenKind}};
 use super::ast::{Expr, LiteralExpr, Stmt, VarStmt};
 
 pub struct Parser<'a> {
-    pub errors: Vec<Error>,
     scanner: Scanner<'a>,
     token: Token,
+    pub errors: Vec<Error>,
 }
 
 impl<'a> Parser<'a> {
@@ -22,7 +22,6 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) {} 
 
     pub fn parse_statement(&mut self) -> Option<Stmt> {
-        println!("{:?}", self.peek());
         match self.peek().kind {
             TokenKind::Let => self.parse_variable_declaration(),
             _ => None,
@@ -81,6 +80,6 @@ impl <'a> Parser <'a> {
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
-    #[error("{loc}: Expected {expected}, found {found}")]
+    #[error("({loc}) - Expected `{expected}`, found `{found}`")]
     Expected { loc: Loc, expected: Token, found: Token },
 }
