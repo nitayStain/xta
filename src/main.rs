@@ -1,6 +1,6 @@
 use clap::{Parser as p, Subcommand};
 use std::{env, fs, path::PathBuf, process::exit};
-use xta::{scanner::Scanner, token::TokenKind, Parser, XtaError};
+use xta::{scanner::Scanner, token::TokenKind, Parser};
 
 #[derive(p)]
 #[command(name = "Xta", version, about, long_about = None)]

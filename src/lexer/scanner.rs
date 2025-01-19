@@ -1,5 +1,5 @@
 use super::token::{lookup_keyword, Loc, Token, TokenKind};
-use crate::errors::XtaError;
+
 
 pub struct Scanner<'a> {
     input: &'a str,  // input is now a string slice

@@ -1,5 +1,5 @@
 fn foo(a Int, b Int) -> Int {
-    let a = 150;
+    let a;
     a = a + 15;
 }
 

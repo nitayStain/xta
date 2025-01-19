@@ -99,7 +99,7 @@ pub struct UnaryExpr {
 #[derive(Debug, PartialEq)]
 pub struct VarDeclStmt {
     pub name: String,
-    pub value: Expr,
+    pub value: Option<Expr>,
     pub is_const: bool,
 }
 

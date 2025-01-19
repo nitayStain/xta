@@ -44,12 +44,13 @@ impl<'a> Parser<'a> {
     pub fn parse_variable_declaration(&mut self) -> Option<Stmt> {
         self.expect(TokenKind::Let)?;
         let name = self.expect(TokenKind::Identifier)?;
+
         self.expect(TokenKind::Assign)?;
 
         let value = self.parse_expression(None)?;
         self.expect(TokenKind::Semicolon)?;
 
-        Some(Stmt::VarDecl(VarDeclStmt {value: value, name: name.text, is_const: false}))
+        Some(Stmt::VarDecl(VarDeclStmt {value: Some(value), name: name.text, is_const: false}))
     }
 
     // Following the next syntax:
