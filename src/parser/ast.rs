@@ -1,4 +1,4 @@
-use crate::token::{Loc, Token};
+use crate::token::Loc;
 
 pub type Block = Vec<Stmt>;
 
@@ -151,24 +151,15 @@ impl BinaryOpType {
     }
 
     pub fn is_logical(&self) -> bool {
-        match self {
-            BinaryOpType::Or | BinaryOpType::And => true,
-            _ => false,
-        }
+        matches!(self, BinaryOpType::Or | BinaryOpType::And)
     }
 
     pub fn is_bitwise(&self) -> bool {
-        match self {
-            BinaryOpType::BitOr | BinaryOpType::BitXor | BinaryOpType::BitAnd | BinaryOpType::LShift | BinaryOpType::RShift => true,
-            _ => false,
-        }
+        matches!(self, BinaryOpType::BitOr | BinaryOpType::BitXor | BinaryOpType::BitAnd | BinaryOpType::LShift | BinaryOpType::RShift)
     }
 
     pub fn is_comparison(&self) -> bool {
-        match self {
-            BinaryOpType::Smaller | BinaryOpType::Greater | BinaryOpType::SmallerEq | BinaryOpType::GreaterEq | BinaryOpType::Eq | BinaryOpType::Neq => true,
-            _ => false,
-        }
+        matches!(self, BinaryOpType::Smaller | BinaryOpType::Greater | BinaryOpType::SmallerEq | BinaryOpType::GreaterEq | BinaryOpType::Eq | BinaryOpType::Neq)
     }
 }
 

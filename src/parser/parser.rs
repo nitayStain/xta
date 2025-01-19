@@ -34,11 +34,18 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_statement(&mut self) -> Option<Stmt> {
-        match self.peek().kind {
+        let result = match self.peek().kind {
             TokenKind::Let => self.parse_variable_declaration(),
             TokenKind::Fn => self.parse_function(),
             _ => Some(Stmt::Expr(self.parse_expression(None)?)),
+        };
+
+        // NOTE: add here every other statement that doesnt have a semicolon at the end.
+        if matches!(result, Some(Stmt::Function(_))) {
+            return result;
         }
+        self.expect(TokenKind::Semicolon)?;
+        result
     }
 
     pub fn parse_variable_declaration(&mut self) -> Option<Stmt> {
@@ -48,7 +55,6 @@ impl<'a> Parser<'a> {
         self.expect(TokenKind::Assign)?;
 
         let value = self.parse_expression(None)?;
-        self.expect(TokenKind::Semicolon)?;
 
         Some(Stmt::VarDecl(VarDeclStmt {value: Some(value), name: name.text, is_const: false}))
     }
@@ -214,6 +220,13 @@ impl <'a> Parser <'a> {
         match self.peek().kind {
             TokenKind::Integer => self.parse_integer(),
             TokenKind::Identifier => self.parse_identifier(),
+            TokenKind::String => self.parse_string(),
+            TokenKind::LeftParen => {
+                self.consume();
+                let expr = self.parse_expression(None);
+                self.expect(TokenKind::RightParen)?;
+                expr
+            }
             _ => None,
         }
     }
@@ -256,7 +269,6 @@ impl <'a> Parser <'a> {
                 loc: self.peek().loc.clone(),
             }));
 
-            self.expect(TokenKind::Semicolon)?;
             result
         }
     }
@@ -265,6 +277,11 @@ impl <'a> Parser <'a> {
     fn parse_integer(&mut self) -> Option<Expr> {
         let token = self.expect(TokenKind::Integer)?;
         Some(Expr::Literal(LiteralExpr { value: Literal::Integer(token.text.parse().unwrap()), loc: token.loc.clone() }))
+    }
+
+    fn parse_string(&mut self) -> Option<Expr> {
+        let token = self.expect(TokenKind::String)?;
+        Some(Expr::Literal(LiteralExpr { value: Literal::String(token.text.clone()), loc: token.loc.clone() }))
     }
 
     fn parse_identifier(&mut self) -> Option<Expr> {

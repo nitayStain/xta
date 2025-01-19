@@ -1,6 +1,6 @@
 fn foo(a Int, b Int) -> Int {
-    let a;
-    a = a + 15;
+    let a = (12 & 4) >> (5 ^ 2);
+    a = 10;
 }
 
 fn main() {
