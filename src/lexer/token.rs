@@ -4,17 +4,33 @@ pub struct Loc {
     pub col: u32
 }
 
+impl std::fmt::Display for Loc {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}:{}", self.row, self.col)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub loc: Loc,
+    pub text: String
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, loc: Loc) -> Self {
+    pub fn new(kind: TokenKind, loc: Loc, text: String) -> Self {
         Self {
             kind,
             loc,
+            text,
+        }
+    }
+
+    pub fn from_kind(kind: TokenKind) -> Self {
+        Self {
+            kind,
+            loc: Loc { row: 0, col: 0 },
+            text: "".to_string(),
         }
     }
 }
@@ -28,17 +44,17 @@ pub enum TokenKind {
     LeftBrace,
     RightBrace,
 
-    Identifier(String),
+    Identifier,
 
     // basic data types
-    Integer(i32),
-    Double(f64),
-    String(String),
-    Boolean(bool),
+    Integer,
+    Double,
+    String,
+    Boolean,
     None,
 
     // represents a typename
-    TypeName(String),
+    TypeName,
     ReturnTypeArrow,
 
     // operators
@@ -87,37 +103,107 @@ pub enum TokenKind {
     // func def
     Fn,
 
-    Illegal(String),
+    Illegal,
     EOF,
 }
 
-pub fn lookup_keyword(identifier: &str) -> Option<TokenKind> {
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self.kind {
+            // Arithmetic operators
+            TokenKind::Min => write!(f, "-"),
+            TokenKind::Plus => write!(f, "+"),
+            TokenKind::Mul => write!(f, "*"),
+            TokenKind::Div => write!(f, "/"),
+            TokenKind::Dec => write!(f, "--"),
+            TokenKind::Inc => write!(f, "++"),
+            
+            // Logical operators
+            TokenKind::Greater => write!(f, ">"),
+            TokenKind::GreaterOrEqu => write!(f, ">="),
+            TokenKind::And => write!(f, "&&"),
+            TokenKind::Equals => write!(f, "=="),
+            TokenKind::Lower => write!(f, "<"),
+            TokenKind::LowerOrEqu => write!(f, "<="),
+            TokenKind::Not => write!(f, "!"),
+            TokenKind::NotEquals => write!(f, "!="),
+            TokenKind::Or => write!(f, "||"),
+            
+            TokenKind::Identifier => write!(f, "{}", self.text),
+            
+            // punctuation
+            TokenKind::Assign => write!(f, "="),
+            TokenKind::LeftBrace => write!(f, "{{"),
+            TokenKind::RightBrace => write!(f, "}}"),
+            TokenKind::LeftParen => write!(f, "("),
+            TokenKind::RightParen => write!(f, ")"),
+            TokenKind::Semicolon => write!(f, ";"),
+            TokenKind::ReturnTypeArrow => write!(f, "->"),
+
+            // bitwise operators
+            TokenKind::BAnd => write!(f, "&"),
+            TokenKind::BNot => write!(f, "~"),
+            TokenKind::BOr => write!(f, "|"),
+            TokenKind::LeftSh => write!(f, "<<"),
+            TokenKind::RightSh => write!(f, ">>"),
+            TokenKind::Xor => write!(f, "^"),
+            
+            // data values
+            TokenKind::Double => write!(f, "{}", self.text),
+            TokenKind::Integer => write!(f, "{}", self.text),
+            TokenKind::String => write!(f, "{}", self.text),
+            TokenKind::Boolean => write!(f, "{}", self.text),
+
+            // keywords
+            TokenKind::Break => write!(f, "break"),
+            TokenKind::Continue => write!(f, "continue"),
+            TokenKind::Const => write!(f, "const"),
+            TokenKind::Else => write!(f, "else"),
+            TokenKind::Elif => write!(f, "elif"),
+            TokenKind::EOF => write!(f, "EOF"),
+            TokenKind::For => write!(f, "for"),
+            TokenKind::Fn => write!(f, "fn"),
+            TokenKind::If => write!(f, "if"),
+            TokenKind::Let => write!(f, "let"),
+            TokenKind::None => write!(f, "None"),
+            TokenKind::Unless => write!(f, "unless"),
+            TokenKind::While => write!(f, "while"),
+            TokenKind::Loop => write!(f, "loop"),
+
+            TokenKind::TypeName => write!(f, "{}", self.text),
+            TokenKind::Illegal => write!(f, "{}", self.text),
+
+        }
+    }
+}
+
+pub fn lookup_keyword(identifier: &str) -> TokenKind {
     match identifier {
-        "const" => Some(TokenKind::Const),
-        "let" => Some(TokenKind::Let),
+        "const" => TokenKind::Const,
+        "let" => TokenKind::Let,
 
-        "if" => Some(TokenKind::If),
-        "elif" => Some(TokenKind::Elif),
-        "else" => Some(TokenKind::Else),
+        "if" => TokenKind::If,
+        "elif" => TokenKind::Elif,
+        "else" => TokenKind::Else,
 
-        "fn" => Some(TokenKind::Fn),
+        "fn" => TokenKind::Fn,
 
-        "for" => Some(TokenKind::For),
+        "for" => TokenKind::For,
 
-        "loop" => Some(TokenKind::Loop),
-        "unless" => Some(TokenKind::Unless),
+        "loop" => TokenKind::Loop,
+        "unless" => TokenKind::Unless,
 
-        "while" => Some(TokenKind::While),
+        "while" => TokenKind::While,
 
-        "break" => Some(TokenKind::Break),
-        "continue" => Some(TokenKind::Continue),
+        "break" => TokenKind::Break,
+        "continue" => TokenKind::Continue,
 
-        "Str" => Some(TokenKind::TypeName(identifier.to_string())),
-        "Int" => Some(TokenKind::TypeName(identifier.to_string())),
-        "Boolean" => Some(TokenKind::TypeName(identifier.to_string())),
-        "Double" => Some(TokenKind::TypeName(identifier.to_string())),
-        "None" => Some(TokenKind::None),
+        "Str" => TokenKind::TypeName,
+        "Int" => TokenKind::TypeName,
+        "Boolean" => TokenKind::TypeName,
+        "Double" => TokenKind::TypeName,
+        "None" => TokenKind::None,
 
-        _ => None,
+        _ => TokenKind::Identifier,
     }
 }

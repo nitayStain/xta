@@ -1,8 +1,8 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser as p, Subcommand};
 use std::{env, fs, path::PathBuf, process::exit};
-use xta::{scanner::Scanner, token::TokenKind, XtaError};
+use xta::{scanner::Scanner, token::TokenKind, Parser, XtaError};
 
-#[derive(Parser)]
+#[derive(p)]
 #[command(name = "Xta", version, about, long_about = None)]
 pub enum Cli {
     Run { path: PathBuf },
@@ -21,13 +21,10 @@ fn main() {
             match fs::read_to_string(path) {
                 Ok(content) => {
                     let mut scanner = Scanner::new(&content);
-
-                    while let Some(token) = scanner.next() {
-                        println!("{:?}", token);
-                        if token.kind == TokenKind::EOF {
-                            break;
-                        }
-                    }
+                    let mut parser = Parser::new(scanner);   
+                    println!("{:?}", parser.parse_statement());
+                    println!("{:?}", parser.parse_statement());
+                    println!("{:?}", parser.errors);
                 }
                 Err(e) => {
                     println!("Failed to open file: {}", e);

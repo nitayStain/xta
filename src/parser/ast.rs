@@ -1,4 +1,4 @@
-use crate::token::TokenKind;
+use crate::token::{Token, TokenKind};
 
 pub type Block = Vec<Stmt>;
 
@@ -6,7 +6,7 @@ pub type Block = Vec<Stmt>;
 pub enum Expr {
     Binary(BinaryExpr),
     Unary(UnaryExpr),
-    Literal(TokenKind),
+    Literal(LiteralExpr),
     Variable(String),
 }
 
@@ -18,36 +18,45 @@ pub enum Stmt {
 
 // custom expressions
 #[derive(Debug, PartialEq)]
+pub enum LiteralExpr {
+    Integer(i64),
+    Double(f64),
+    String(String),
+    Boolean(bool),
+    None,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct BinaryExpr {
-    left: Box<Expr>,
-    right: Box<Expr>,
-    operator: TokenKind,
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
+    pub operator: TokenKind,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct UnaryExpr {
-    operand: Box<Expr>,
-    operator: TokenKind,
+    pub operand: Box<Expr>,
+    pub operator: TokenKind,
 }
 
 // custom statements
 #[derive(Debug, PartialEq)]
 pub struct VarStmt {
-    name: String,
-    value: Box<Expr>,
-    is_const: bool,
+    pub name: String,
+    pub value: Expr,
+    pub is_const: bool,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct IfStmt {
-    condition: Expr,
-    then: Block,
-    elif_branch: Vec<ElifStmt>,
-    else_branch: Option<Block>,
+    pub condition: Expr,
+    pub then: Block,
+    pub elif_branch: Vec<ElifStmt>,
+    pub else_branch: Option<Block>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ElifStmt {
-    condition: Expr,
-    then: Block,
+    pub condition: Expr,
+    pub then: Block,
 }

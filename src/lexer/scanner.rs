@@ -24,12 +24,11 @@ impl<'a> Scanner<'a> {
     }
 }
 
-impl<'a> Iterator for Scanner<'a> {
-    type Item = Token;
 
-    // returns the next token
-    fn next(&mut self) -> Option<Token> {
-        let mut token: TokenKind = TokenKind::Illegal(String::new());
+// implementation for private functions
+impl<'a> Scanner<'a> {
+    pub fn next_token(&mut self) -> Token {
+        let mut token: TokenKind = TokenKind::Illegal;
         let mut loc = self.get_loc();
         let mut content = "";
         self.ignore_whitespace();
@@ -137,40 +136,28 @@ impl<'a> Iterator for Scanner<'a> {
                 }
             }
             '"' => {
-                self.advance();
-                let string = self.get_string();
-                token = string;
-                
+                return self.get_string();
             }
             _ => {
                 if self.curr.is_alphabetic() {
                     let id = self.get_identifier();
 
                     if id == "true" || id == "false" {
-                        token = TokenKind::Boolean(id == "true");
+                        return Token::new(TokenKind::Boolean, loc, id);
                     } else {
-                        token = match lookup_keyword(id.as_str()) {
-                            Some(keyword) => keyword,
-                            None => TokenKind::Identifier(id),
-                        };
+                        return Token::new(lookup_keyword(id.clone().as_str()), loc, id);
                     }
-                    return Some(Token::new(token, loc)); // avoid advancing the input, because it has already been advanced when get_identifier is called.
                 } else if self.curr.is_numeric() {
-                    // same as the identifier part, `get_number` advances the token, so no need for it.
-                    return Some(Token::new(self.get_number(), loc));
+                    return self.get_number();
                 } else {
-                    token = TokenKind::Illegal(self.curr.to_string());
+                    return Token::new(TokenKind::Illegal, loc, self.curr.to_string());
                 }
             }
         }
 
         self.advance();
-        Some(Token::new(token, loc))
+        Token::new(token, loc, content.to_string())
     }
-}
-
-// implementation for private functions
-impl<'a> Scanner<'a> {
 
     fn get_loc(&mut self) -> Loc {
         Loc {
@@ -206,19 +193,23 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn get_string(&mut self) -> TokenKind {
+    fn get_string(&mut self) -> Token {
         let begin_pos = self.position;
+        let loc = self.get_loc();
+
+        self.advance(); // remove '"'
+
         while self.peek() != '"' {
             self.advance();
 
             if self.peek() == '\0' {
-                return TokenKind::Illegal(self.input[begin_pos..self.position].to_string());
+                return Token::new(TokenKind::Illegal, loc, self.input[begin_pos..self.position].to_string());
             }
         }
 
         self.advance();
 
-        TokenKind::String(self.input[begin_pos..self.position].to_string())
+        Token::new(TokenKind::String, loc, self.input[begin_pos..self.position].to_string())
     }
 
     fn get_identifier(&mut self) -> String {
@@ -232,14 +223,15 @@ impl<'a> Scanner<'a> {
         self.input[begin_pos..self.position].to_string()
     }
 
-    fn get_number(&mut self) -> TokenKind {
+    fn get_number(&mut self) -> Token {
+        let loc = self.get_loc();
         let mut num_str = String::new();
         let mut is_floating = false;
 
         while self.curr.is_digit(10) || self.curr == '.' {
             if self.curr == '.' {
                 if is_floating {
-                    return TokenKind::Illegal(num_str);
+                    return Token::new(TokenKind::Illegal, loc, num_str);
                 }
                 is_floating = true;
             }
@@ -248,15 +240,11 @@ impl<'a> Scanner<'a> {
         }
 
         if is_floating {
-            match num_str.parse::<f64>() {
-                Ok(value) => TokenKind::Double(value),
-                Err(_) => TokenKind::Illegal(num_str),
-            }
+            
+            Token::new(TokenKind::Double, loc, num_str)
+            
         } else {
-            match num_str.parse::<i32>() {
-                Ok(value) => TokenKind::Integer(value),
-                Err(_) => TokenKind::Illegal(num_str),
-            }
+            Token::new(TokenKind::Integer, loc, num_str)
         }
     }
 }

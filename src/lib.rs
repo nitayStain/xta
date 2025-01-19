@@ -7,3 +7,4 @@ pub use lexer::token;
 
 mod parser;
 pub use parser::ast;
+pub use parser::parser::Parser;

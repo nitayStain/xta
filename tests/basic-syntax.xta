@@ -1,7 +1,2 @@
-fn main() -> None
-{
-    let i = 752;
-    if(i == 0 && i <= 150) {
-        print("hello");
-    }
-}
+let i = 1500105;
+let b = 150;
