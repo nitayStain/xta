@@ -1,6 +1,6 @@
 use crate::{scanner::Scanner, token::{Loc, Token, TokenKind}};
 
-use super::ast::{Expr, FunctionStmt, LiteralExpr, Param, Stmt, VarStmt};
+use super::ast::{BinaryExpr, BinaryOpType, Expr, FunctionStmt, IdentifierExpr, Literal, LiteralExpr, Param, Stmt, UnaryExpr, UnaryOpType, VarDeclStmt};
 
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
@@ -37,7 +37,7 @@ impl<'a> Parser<'a> {
         match self.peek().kind {
             TokenKind::Let => self.parse_variable_declaration(),
             TokenKind::Fn => self.parse_function(),
-            _ => None,
+            _ => Some(Stmt::Expr(self.parse_expression(None)?)),
         }
     }
 
@@ -46,10 +46,10 @@ impl<'a> Parser<'a> {
         let name = self.expect(TokenKind::Identifier)?;
         self.expect(TokenKind::Assign)?;
 
-        let value = self.parse_expression()?;
+        let value = self.parse_expression(None)?;
         self.expect(TokenKind::Semicolon)?;
 
-        Some(Stmt::Variable(VarStmt {value: value, name: name.text, is_const: false}))
+        Some(Stmt::VarDecl(VarDeclStmt {value: value, name: name.text, is_const: false}))
     }
 
     // Following the next syntax:
@@ -75,16 +75,59 @@ impl<'a> Parser<'a> {
         Some(Stmt::Function(FunctionStmt {name: name.text, params: params, body: body, return_type: return_type}))
     }
 
-    pub fn parse_expression(&mut self) -> Option<Expr> {
-        match self.peek().kind {
-            TokenKind::Integer => self.parse_integer(),
-            _ => None,
+    pub fn parse_expression(&mut self, prec: Option<i8>) -> Option<Expr> {
+        let prec = prec.unwrap_or(-1);
+
+        let mut lhs = self.parse_unary()?;
+
+        if self.peek().kind == TokenKind::Assign && prec < BinaryOpType::Assign.prec() as i8 {
+            return self.parse_reassign(lhs);
         }
+
+
+        while let Some(op) = self.parse_binary_op() {
+            let op_prec = op.prec() as i8;
+            if op_prec <= prec {
+                break;
+            }
+
+            self.consume();
+            let rhs = self.parse_expression(Some(op_prec))?;
+            lhs = Expr::Binary(BinaryExpr {
+                left: Box::new(lhs),
+                right: Box::new(rhs),
+                operator: op,
+                loc: self.peek().loc.clone(),
+            })
+        }
+
+        Some(lhs)
     }
 
-    pub fn parse_integer(&mut self) -> Option<Expr> {
-        let token = self.expect(TokenKind::Integer)?;
-        Some(Expr::Literal(LiteralExpr::Integer(token.text.parse().unwrap())))
+    pub fn parse_unary(&mut self) -> Option<Expr> {
+        match self.peek().kind {
+            TokenKind::Min => {
+                let loc = self.peek().loc.clone();
+                self.consume();
+                let op = self.parse_expression(Some(UnaryOpType::Neg as i8));
+                Some(Expr::Unary(UnaryExpr {
+                    operand: Box::new(op.unwrap()),
+                    operator: UnaryOpType::Neg,
+                    loc
+                }))
+            }
+            TokenKind::Not => {
+                let loc = self.peek().loc.clone();
+                self.consume();
+                let op = self.parse_expression(Some(UnaryOpType::Not as i8));
+                Some(Expr::Unary(UnaryExpr {
+                    operand: Box::new(op.unwrap()),
+                    operator: UnaryOpType::Not,
+                    loc
+                }))
+            }
+            _ => self.parse_primary()
+        }
     }
 }
 
@@ -166,12 +209,66 @@ impl <'a> Parser <'a> {
         Some(stmts)
     }
 
-    fn get_precedence(&self, kind: TokenKind) -> Option<u8> {
-        match kind {
-            TokenKind::Plus | TokenKind::Min => Some(1),
-            TokenKind::Mul | TokenKind::Div => Some(2),
+    fn parse_primary(&mut self) -> Option<Expr> {
+        match self.peek().kind {
+            TokenKind::Integer => self.parse_integer(),
+            TokenKind::Identifier => self.parse_identifier(),
             _ => None,
         }
+    }
+
+    fn parse_binary_op(&mut self) -> Option<BinaryOpType> {
+        match self.peek().kind {
+            TokenKind::Plus => Some(BinaryOpType::Add),
+            TokenKind::Min => Some(BinaryOpType::Sub),
+            TokenKind::Mul => Some(BinaryOpType::Mul),
+            TokenKind::Div => Some(BinaryOpType::Div),
+            TokenKind::Assign => Some(BinaryOpType::Assign),
+            TokenKind::And => Some(BinaryOpType::And),
+            TokenKind::Or => Some(BinaryOpType::Or),
+            TokenKind::Equals => Some(BinaryOpType::Eq),
+            TokenKind::NotEquals => Some(BinaryOpType::Neq),
+            TokenKind::Greater => Some(BinaryOpType::Greater),
+            TokenKind::GreaterOrEqu => Some(BinaryOpType::GreaterEq),
+            TokenKind::Lower => Some(BinaryOpType::Smaller),
+            TokenKind::LowerOrEqu => Some(BinaryOpType::SmallerEq),
+            TokenKind::BAnd => Some(BinaryOpType::BitAnd),
+            TokenKind::BOr => Some(BinaryOpType::BitOr),
+            TokenKind::Xor => Some(BinaryOpType::BitXor),
+            TokenKind::RightSh => Some(BinaryOpType::RShift),
+            TokenKind::LeftSh => Some(BinaryOpType::LShift),
+            _ => None,
+        }
+    }
+
+    fn parse_reassign(&mut self, lhs: Expr) -> Option<Expr> {
+        self.expect(TokenKind::Assign)?;
+        if ! matches!(lhs, Expr::Identifier(_)) {
+            self.errors.push(Error::ExpectedId { loc: lhs.loc(), found: self.peek().clone() });
+            None
+        } else {
+            let rhs = self.parse_expression(Some(BinaryOpType::Assign.prec() as i8))?;
+            let result = Some(Expr::Binary(BinaryExpr {
+                left: Box::new(lhs),
+                right: Box::new(rhs),
+                operator: BinaryOpType::Assign,
+                loc: self.peek().loc.clone(),
+            }));
+
+            self.expect(TokenKind::Semicolon)?;
+            result
+        }
+    }
+
+    // primary expression parsing
+    fn parse_integer(&mut self) -> Option<Expr> {
+        let token = self.expect(TokenKind::Integer)?;
+        Some(Expr::Literal(LiteralExpr { value: Literal::Integer(token.text.parse().unwrap()), loc: token.loc.clone() }))
+    }
+
+    fn parse_identifier(&mut self) -> Option<Expr> {
+        let token = self.expect(TokenKind::Identifier)?;
+        Some(Expr::Identifier(IdentifierExpr { name: token.text.clone(), loc: token.loc.clone() }))
     }
 }
 
@@ -179,4 +276,7 @@ impl <'a> Parser <'a> {
 pub enum Error {
     #[error("~ ({loc}) : Expected `{expected}`, found `{found}`")]
     Expected { loc: Loc, expected: Token, found: Token },
+
+    #[error("~ ({loc}) : Expected an identifier, found `{found}`")]
+    ExpectedId {loc: Loc, found: Token }
 }

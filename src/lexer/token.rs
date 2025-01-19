@@ -33,6 +33,20 @@ impl Token {
             text: "".to_string(),
         }
     }
+
+    pub fn is_unary(&self) -> bool {
+        match self.kind {
+            TokenKind::Not | TokenKind::BNot | TokenKind::Inc | TokenKind::Dec => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_binary(&self) -> bool {
+        match self.kind {
+            TokenKind::Plus | TokenKind::Min | TokenKind::Mul | TokenKind::Div | TokenKind::Assign | TokenKind::And | TokenKind::Or | TokenKind::Equals | TokenKind::NotEquals | TokenKind::Greater | TokenKind::GreaterOrEqu | TokenKind::Lower | TokenKind::LowerOrEqu | TokenKind::BAnd | TokenKind::BOr | TokenKind::Xor | TokenKind::RightSh | TokenKind::LeftSh => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
