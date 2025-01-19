@@ -69,7 +69,7 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
-        
+
         let body =  self.parse_scope()?;
 
         Some(Stmt::Function(FunctionStmt {name: name.text, params: params, body: body, return_type: return_type}))
@@ -164,6 +164,14 @@ impl <'a> Parser <'a> {
         self.expect(TokenKind::RightBrace)?;
 
         Some(stmts)
+    }
+
+    fn get_precedence(&self, kind: TokenKind) -> Option<u8> {
+        match kind {
+            TokenKind::Plus | TokenKind::Min => Some(1),
+            TokenKind::Mul | TokenKind::Div => Some(2),
+            _ => None,
+        }
     }
 }
 

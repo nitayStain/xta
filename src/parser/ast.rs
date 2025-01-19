@@ -3,6 +3,14 @@ use crate::token::{Loc, Token};
 pub type Block = Vec<Stmt>;
 
 #[derive(Debug, PartialEq)]
+pub enum Stmt {
+    Variable(VarStmt),
+    Function(FunctionStmt),
+    If(IfStmt),
+    Expr(Expr),
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Expr {
     Binary(BinaryExpr),
     Unary(UnaryExpr),
@@ -10,14 +18,9 @@ pub enum Expr {
     Identifier(IdentifierExpr),
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Stmt {
-    Variable(VarStmt),
-    Function(FunctionStmt),
-    If(IfStmt),
-}
 
 // custom expressions
+
 #[derive(Debug, PartialEq)]
 pub struct IdentifierExpr {
     pub name: String,

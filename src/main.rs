@@ -14,7 +14,7 @@ fn main() {
     match cli {
         Cli::Run { path } => {
             if !path.is_file() {
-                eprintln!("Cannot read a directory.");
+                eprintln!("~ Error: Cannot read a directory.");
                 exit(1);
             }
             match fs::read_to_string(path) {
