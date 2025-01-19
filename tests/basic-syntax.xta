@@ -1,1 +1,7 @@
-let i==510;
+fn foo(a Int, b Int) -> Int {
+    let a = 150;
+}
+
+fn main() {
+
+}

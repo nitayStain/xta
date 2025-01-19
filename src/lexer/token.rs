@@ -39,6 +39,7 @@ impl Token {
 pub enum TokenKind {
     // seperators
     Semicolon,
+    Comma,
     LeftParen,
     RightParen,
     LeftBrace,
@@ -53,8 +54,7 @@ pub enum TokenKind {
     Boolean,
     None,
 
-    // represents a typename
-    TypeName,
+    // points to the return type of a function (.e.g. fn foo() -> int)
     ReturnTypeArrow,
 
     // operators
@@ -139,6 +139,7 @@ impl std::fmt::Display for Token {
             TokenKind::RightParen => write!(f, ")"),
             TokenKind::Semicolon => write!(f, ";"),
             TokenKind::ReturnTypeArrow => write!(f, "->"),
+            TokenKind::Comma => write!(f, ","),
 
             // bitwise operators
             TokenKind::BAnd => write!(f, "&"),
@@ -170,7 +171,6 @@ impl std::fmt::Display for Token {
             TokenKind::While => write!(f, "while"),
             TokenKind::Loop => write!(f, "loop"),
 
-            TokenKind::TypeName => write!(f, "{}", self.text),
             TokenKind::Illegal => write!(f, "{}", self.text),
 
         }
@@ -198,10 +198,6 @@ pub fn lookup_keyword(identifier: &str) -> TokenKind {
         "break" => TokenKind::Break,
         "continue" => TokenKind::Continue,
 
-        "Str" => TokenKind::TypeName,
-        "Int" => TokenKind::TypeName,
-        "Boolean" => TokenKind::TypeName,
-        "Double" => TokenKind::TypeName,
         "None" => TokenKind::None,
 
         _ => TokenKind::Identifier,

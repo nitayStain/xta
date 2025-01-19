@@ -17,11 +17,16 @@ fn main() {
                 eprintln!("Cannot read a directory.");
                 exit(1);
             }
-
             match fs::read_to_string(path) {
                 Ok(content) => {
                     let mut scanner = Scanner::new(&content);
                     let mut parser = Parser::new(scanner);
+
+                    let stmts = parser.parse_file();
+                    for stmt in stmts {
+                        println!("{:?}", stmt);
+                    }
+
                     for error in parser.errors {
                         eprintln!("{}", error);
                     }

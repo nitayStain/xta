@@ -1,6 +1,6 @@
 use crate::{scanner::Scanner, token::{Loc, Token, TokenKind}};
 
-use super::ast::{Expr, LiteralExpr, Stmt, VarStmt};
+use super::ast::{Expr, FunctionStmt, LiteralExpr, Param, Stmt, VarStmt};
 
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
@@ -19,10 +19,24 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn parse_file(&mut self) -> Vec<Stmt> {
+        let mut stmts = Vec::new();
+
+        while self.peek().kind != TokenKind::EOF {
+            if let Some(stmt) = self.parse_statement() {
+                stmts.push(stmt);
+            } else {
+                self.consume();
+            }
+        }
+
+        stmts
+    }
 
     pub fn parse_statement(&mut self) -> Option<Stmt> {
         match self.peek().kind {
             TokenKind::Let => self.parse_variable_declaration(),
+            TokenKind::Fn => self.parse_function(),
             _ => None,
         }
     }
@@ -38,10 +52,32 @@ impl<'a> Parser<'a> {
         Some(Stmt::Variable(VarStmt {value: value, name: name.text, is_const: false}))
     }
 
+    // Following the next syntax:
+    // fn foo(a int, b int) -> int { <body> }
+    pub fn parse_function(&mut self) -> Option<Stmt> {
+        self.expect(TokenKind::Fn)?;
+        let name = self.expect(TokenKind::Identifier)?;
+
+        let params = match self.parse_function_params() {
+            Some(params) => params,
+            None => Vec::new(),
+        };
+        
+        let return_type = if self.peek().kind == TokenKind::ReturnTypeArrow {
+            self.consume();
+            Some(self.expect(TokenKind::Identifier)?.text)
+        } else {
+            None
+        };
+        
+        let body =  self.parse_scope()?;
+
+        Some(Stmt::Function(FunctionStmt {name: name.text, params: params, body: body, return_type: return_type}))
+    }
+
     pub fn parse_expression(&mut self) -> Option<Expr> {
         match self.peek().kind {
             TokenKind::Integer => self.parse_integer(),
-            // TokenKind::Identifier => self.parse_identifier(),
             _ => None,
         }
     }
@@ -74,6 +110,60 @@ impl <'a> Parser <'a> {
 
             None
         }
+    }
+
+    fn parse_function_params(&mut self) -> Option<Vec<Param>> {
+
+        self.expect(TokenKind::LeftParen)?;
+        
+        // handle params
+        let mut params = Vec::new();
+        let has_params = self.peek().kind != TokenKind::RightParen;
+
+        if has_params {
+            loop {
+                let param_name = self.expect(TokenKind::Identifier)?;
+                let param_type = self.expect(TokenKind::Identifier)?;
+                
+                params.push(Param { name: param_name.text.clone(), param_type: param_type.text.clone()});
+
+                if self.peek().kind == TokenKind::RightParen {
+                    break;
+                }
+
+                if self.peek().kind == TokenKind::Comma {
+                    self.consume();
+                    continue;
+                } else {
+                    self.errors.push(Error::Expected {
+                        loc: self.peek().loc.clone(),
+                        expected: Token::from_kind(TokenKind::Comma),
+                        found: self.peek().clone(),
+                    });
+                }
+
+            };
+        }
+
+        self.expect(TokenKind::RightParen)?;
+        Some(params)
+    }
+
+    fn parse_scope(&mut self) -> Option<Vec<Stmt>> {
+        self.expect(TokenKind::LeftBrace)?;
+
+        let mut stmts = Vec::new();
+        while self.peek().kind != TokenKind::RightBrace {
+            if let Some(stmt) = self.parse_statement() {
+                stmts.push(stmt);
+            } else {
+                self.consume();
+            }
+        }
+
+        self.expect(TokenKind::RightBrace)?;
+
+        Some(stmts)
     }
 }
 

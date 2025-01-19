@@ -37,6 +37,9 @@ impl<'a> Scanner<'a> {
             '\0' => {
                 token = TokenKind::EOF;
             }
+            ',' => {
+                token = TokenKind::Comma;
+            }
             '+' => {
                 token = TokenKind::Plus;
                 if self.peek() == '+' {

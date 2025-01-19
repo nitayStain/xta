@@ -13,6 +13,7 @@ pub enum Expr {
 #[derive(Debug, PartialEq)]
 pub enum Stmt {
     Variable(VarStmt),
+    Function(FunctionStmt),
     If(IfStmt),
 }
 
@@ -65,4 +66,18 @@ pub struct IfStmt {
 pub struct ElifStmt {
     pub condition: Expr,
     pub then: Block,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct FunctionStmt {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<String>,
+    pub body: Block,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Param { 
+    pub name: String,
+    pub param_type: String,
 }
