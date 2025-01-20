@@ -68,32 +68,20 @@ impl<'a> Parser<'a> {
         
         let condition = self.parse_if_condition()?; 
 
-        let mut then = Vec::new();
-
         let mut elif_branch = Vec::new();
 
         let mut else_branch : Option<Block> = None;
 
-        if self.peek().kind == TokenKind::LeftBrace {
-            then = self.parse_scope()?;
-        } else {
-            then.push(self.parse_statement()?);
-        }
+        let then = self.parse_scope()?;
 
         while self.peek().kind == TokenKind::Elif {
-            if let Some(elif) = self.parse_elif_condition() {
-                elif_branch.push(elif);
-            } 
+            elif_branch.push(self.parse_elif()?); 
         }
 
         // TODO: fix when no else is added.
         if self.peek().kind == TokenKind::Else {
             self.consume();
-            if self.peek().kind == TokenKind::LeftBrace {
-                else_branch = self.parse_scope();
-            } else {
-                else_branch = Some([self.parse_statement()?].to_vec());
-            }
+            else_branch = Some(self.parse_scope()?);
         }
 
         Some(Stmt::If(IfStmt { condition, then, elif_branch, else_branch}))
@@ -108,22 +96,12 @@ impl<'a> Parser<'a> {
         cond
     }
 
-    pub fn parse_elif_condition(&mut self) -> Option<ElifStmt> {
+    pub fn parse_elif(&mut self) -> Option<ElifStmt> {
         self.expect(TokenKind::Elif)?;
         
         let condition = self.parse_if_condition()?; 
 
-        let mut then = Vec::new();
-
-        if self.peek().kind == TokenKind::LeftBrace {
-            then = self.parse_scope()?;
-        } else {
-            then.push(self.parse_statement()?);
-        }
-
-        if self.peek().kind == TokenKind::RightBrace {
-            self.consume();
-        }
+        let then = self.parse_scope()?;
 
         Some(ElifStmt { condition, then })
     }

@@ -1,8 +1,6 @@
 fn foo(a Int, b Int) -> Int {
-    if(a > b)
-        a = -b;
-    elif (b == a)
-        b = a ^ 12;
+    if(a > b) {}
+    elif(b == a) {}
 }
 
 fn main() {
