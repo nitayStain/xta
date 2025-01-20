@@ -1,6 +1,7 @@
 fn foo(a Int, b Int) -> Int {
     if(a > b) {}
     elif(b == a) {}
+    else {}
 }
 
 fn main() {

@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
     pub fn parse_if(&mut self) -> Option<Stmt> {
         self.expect(TokenKind::If)?;
         
-        let condition = self.parse_if_condition()?; 
+        let condition = self.parse_expression(None)?; 
 
         let mut elif_branch = Vec::new();
 
@@ -87,19 +87,10 @@ impl<'a> Parser<'a> {
         Some(Stmt::If(IfStmt { condition, then, elif_branch, else_branch}))
     }
 
-
-    pub fn parse_if_condition(&mut self) -> Option<Expr> {
-        self.expect(TokenKind::LeftParen)?;
-        let cond = self.parse_expression(None);
-        self.expect(TokenKind::RightParen)?;
-
-        cond
-    }
-
     pub fn parse_elif(&mut self) -> Option<ElifStmt> {
         self.expect(TokenKind::Elif)?;
         
-        let condition = self.parse_if_condition()?; 
+        let condition = self.parse_expression(None)?;
 
         let then = self.parse_scope()?;
 
