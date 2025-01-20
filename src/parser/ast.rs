@@ -2,7 +2,7 @@ use crate::token::Loc;
 
 pub type Block = Vec<Stmt>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum UnaryOpType {
     Neg,
     Not,
@@ -12,7 +12,7 @@ pub enum UnaryOpType {
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum BinaryOpType {
     Add,
     Sub,
@@ -38,7 +38,7 @@ pub enum BinaryOpType {
     Assign,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
     VarDecl(VarDeclStmt),
     Function(FunctionStmt),
@@ -46,7 +46,7 @@ pub enum Stmt {
     Expr(Expr),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
     Binary(BinaryExpr),
     Unary(UnaryExpr),
@@ -57,19 +57,19 @@ pub enum Expr {
 
 // custom expressions
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IdentifierExpr {
     pub name: String,
     pub loc: Loc
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct LiteralExpr {
     pub value: Literal,
     pub loc: Loc,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Literal {
     Integer(i64),
     Double(f64),
@@ -80,7 +80,7 @@ pub enum Literal {
 
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BinaryExpr {
     pub left: Box<Expr>,
     pub right: Box<Expr>,
@@ -88,7 +88,7 @@ pub struct BinaryExpr {
     pub loc: Loc,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct UnaryExpr {
     pub operand: Box<Expr>,
     pub operator: UnaryOpType,
@@ -96,14 +96,14 @@ pub struct UnaryExpr {
 }
 
 // custom statements
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VarDeclStmt {
     pub name: String,
     pub value: Option<Expr>,
     pub is_const: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IfStmt {
     pub condition: Expr,
     pub then: Block,
@@ -111,13 +111,13 @@ pub struct IfStmt {
     pub else_branch: Option<Block>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ElifStmt {
     pub condition: Expr,
     pub then: Block,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FunctionStmt {
     pub name: String,
     pub params: Vec<Param>,
@@ -125,7 +125,7 @@ pub struct FunctionStmt {
     pub body: Block,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Param { 
     pub name: String,
     pub param_type: String,

@@ -1,6 +1,6 @@
 use crate::{scanner::Scanner, token::{Loc, Token, TokenKind}};
 
-use super::ast::{BinaryExpr, BinaryOpType, Expr, FunctionStmt, IdentifierExpr, Literal, LiteralExpr, Param, Stmt, UnaryExpr, UnaryOpType, VarDeclStmt};
+use super::ast::{BinaryExpr, BinaryOpType, Block, ElifStmt, Expr, FunctionStmt, IdentifierExpr, IfStmt, Literal, LiteralExpr, Param, Stmt, UnaryExpr, UnaryOpType, VarDeclStmt};
 
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
@@ -37,13 +37,15 @@ impl<'a> Parser<'a> {
         let result = match self.peek().kind {
             TokenKind::Let => self.parse_variable_declaration(),
             TokenKind::Fn => self.parse_function(),
+            TokenKind::If => self.parse_if(),
             _ => Some(Stmt::Expr(self.parse_expression(None)?)),
         };
 
         // NOTE: add here every other statement that doesnt have a semicolon at the end.
-        if matches!(result, Some(Stmt::Function(_))) {
+        if matches!(result, Some(Stmt::Function(_)) | Some(Stmt::If(_))) {
             return result;
         }
+
         self.expect(TokenKind::Semicolon)?;
         result
     }
@@ -60,15 +62,79 @@ impl<'a> Parser<'a> {
     }
 
     // Following the next syntax:
+    // if(a > b) { <body> } (optional) elif (...) { <body> } (optional) else { ... }
+    pub fn parse_if(&mut self) -> Option<Stmt> {
+        self.expect(TokenKind::If)?;
+        
+        let condition = self.parse_if_condition()?; 
+
+        let mut then = Vec::new();
+
+        let mut elif_branch = Vec::new();
+
+        let mut else_branch : Option<Block> = None;
+
+        if self.peek().kind == TokenKind::LeftBrace {
+            then = self.parse_scope()?;
+        } else {
+            then.push(self.parse_statement()?);
+        }
+
+        while self.peek().kind == TokenKind::Elif {
+            if let Some(elif) = self.parse_elif_condition() {
+                elif_branch.push(elif);
+            } 
+        }
+
+        // TODO: fix when no else is added.
+        if self.peek().kind == TokenKind::Else {
+            self.consume();
+            if self.peek().kind == TokenKind::LeftBrace {
+                else_branch = self.parse_scope();
+            } else {
+                else_branch = Some([self.parse_statement()?].to_vec());
+            }
+        }
+
+        Some(Stmt::If(IfStmt { condition, then, elif_branch, else_branch}))
+    }
+
+
+    pub fn parse_if_condition(&mut self) -> Option<Expr> {
+        self.expect(TokenKind::LeftParen)?;
+        let cond = self.parse_expression(None);
+        self.expect(TokenKind::RightParen)?;
+
+        cond
+    }
+
+    pub fn parse_elif_condition(&mut self) -> Option<ElifStmt> {
+        self.expect(TokenKind::Elif)?;
+        
+        let condition = self.parse_if_condition()?; 
+
+        let mut then = Vec::new();
+
+        if self.peek().kind == TokenKind::LeftBrace {
+            then = self.parse_scope()?;
+        } else {
+            then.push(self.parse_statement()?);
+        }
+
+        if self.peek().kind == TokenKind::RightBrace {
+            self.consume();
+        }
+
+        Some(ElifStmt { condition, then })
+    }
+
+    // Following the next syntax:
     // fn foo(a int, b int) -> int { <body> }
     pub fn parse_function(&mut self) -> Option<Stmt> {
         self.expect(TokenKind::Fn)?;
         let name = self.expect(TokenKind::Identifier)?;
 
-        let params = match self.parse_function_params() {
-            Some(params) => params,
-            None => Vec::new(),
-        };
+        let params = self.parse_function_params().unwrap_or_default();
         
         let return_type = if self.peek().kind == TokenKind::ReturnTypeArrow {
             self.consume();
@@ -79,7 +145,7 @@ impl<'a> Parser<'a> {
 
         let body =  self.parse_scope()?;
 
-        Some(Stmt::Function(FunctionStmt {name: name.text, params: params, body: body, return_type: return_type}))
+        Some(Stmt::Function(FunctionStmt {name: name.text, params, body, return_type}))
     }
 
     pub fn parse_expression(&mut self, prec: Option<i8>) -> Option<Expr> {
@@ -90,7 +156,6 @@ impl<'a> Parser<'a> {
         if self.peek().kind == TokenKind::Assign && prec < BinaryOpType::Assign.prec() as i8 {
             return self.parse_reassign(lhs);
         }
-
 
         while let Some(op) = self.parse_binary_op() {
             let op_prec = op.prec() as i8;
