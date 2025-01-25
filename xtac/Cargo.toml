@@ -1,0 +1,9 @@
+[package]
+name = "xtac"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.3", features = ["derive"] }
+xta-lexer = { path = "../xta-lexer" }
+xta-parser = { path = "../xta-parser" }
