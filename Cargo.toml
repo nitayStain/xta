@@ -1,8 +1,6 @@
-[package]
-name = "xta"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-clap = { version = "4.3", features = ["derive"] }
-thiserror = "2.0.9"
+[workspace]
+members = [
+    "xtac",
+    "xta-lexer",
+    "xta-parser"
+]
