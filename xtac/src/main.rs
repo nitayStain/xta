@@ -1,7 +1,8 @@
 use clap::Parser as p;
-use std::{fs, path::PathBuf, process::exit};
+use std::{fs, path::PathBuf, process::exit, time::Instant};
 use xta_lexer::scanner::Scanner;
 use xta_parser::parser::Parser;
+
 
 #[derive(p)]
 #[command(name = "Xta", version, about, long_about = None)]
@@ -23,7 +24,11 @@ fn main() {
                     let mut scanner = Scanner::new(&content);
                     let mut parser = Parser::new(scanner);
 
+                    let start = Instant::now();
                     let stmts = parser.parse_file();
+                    let elapsed = start.elapsed();
+
+                    println!("parsing: {:?}", elapsed);
                     for stmt in stmts {
                         println!("{:?}", stmt);
                     }

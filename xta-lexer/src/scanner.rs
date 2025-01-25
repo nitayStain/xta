@@ -26,10 +26,10 @@ impl<'a> Scanner<'a> {
 
 // implementation for private functions
 impl<'a> Scanner<'a> {
-    pub fn next_token(&mut self) -> Token {
-        let mut token: TokenKind = TokenKind::Illegal;
-        let mut loc = self.get_loc();
-        let mut content = "";
+    pub fn next_token(&mut self) -> Token<'a> {
+        let token: TokenKind;
+        let loc = self.get_loc();
+        let content = "";
         self.ignore_whitespace();
 
         match self.curr {
@@ -40,20 +40,22 @@ impl<'a> Scanner<'a> {
                 token = TokenKind::Comma;
             }
             '+' => {
-                token = TokenKind::Plus;
-                if self.peek() == '+' {
+                token = if self.peek() == '+' {
                     self.advance();
-                    token = TokenKind::Inc;
-                }
+                    TokenKind::Inc
+                } else {
+                    TokenKind::Plus
+                };
             }
             '-' => {
-                token = TokenKind::Min;
-                if self.peek() == '>' {
+                token = if self.peek() == '>' {
                     self.advance();
-                    token = TokenKind::ReturnTypeArrow;
+                    TokenKind::ReturnTypeArrow
                 } else if self.peek() == '-' {
                     self.advance();
-                    token = TokenKind::Dec;
+                    TokenKind::Dec
+                } else {
+                    TokenKind::Min
                 }
             }
             '*' => {
@@ -147,18 +149,18 @@ impl<'a> Scanner<'a> {
                     if id == "true" || id == "false" {
                         return Token::new(TokenKind::Boolean, loc, id);
                     } else {
-                        return Token::new(lookup_keyword(id.clone().as_str()), loc, id);
+                        return Token::new(lookup_keyword(id), loc, id);
                     }
                 } else if self.curr.is_numeric() {
                     return self.get_number();
                 } else {
-                    return Token::new(TokenKind::Illegal, loc, self.curr.to_string());
+                    return Token::new(TokenKind::Illegal, loc, &self.input[self.position..][..1]);
                 }
             }
         }
 
         self.advance();
-        Token::new(token, loc, content.to_string())
+        Token::new(token, loc, content)
     }
 
     fn get_loc(&mut self) -> Loc {
@@ -195,7 +197,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn get_string(&mut self) -> Token {
+    fn get_string(&mut self) -> Token<'a> {
         let begin_pos = self.position;
         let loc = self.get_loc();
 
@@ -205,16 +207,16 @@ impl<'a> Scanner<'a> {
             self.advance();
 
             if self.peek() == '\0' {
-                return Token::new(TokenKind::Illegal, loc, self.input[begin_pos..self.position].to_string());
+                return Token::new(TokenKind::Illegal, loc, &self.input[begin_pos..self.position]);
             }
         }
 
         self.advance();
 
-        Token::new(TokenKind::String, loc, self.input[begin_pos..self.position].to_string())
+        Token::new(TokenKind::String, loc, &self.input[begin_pos..self.position])
     }
 
-    fn get_identifier(&mut self) -> String {
+    fn get_identifier(&mut self) -> &'a str {
         let begin_pos = self.position;
         while self.peek().is_alphanumeric() || self.peek() == '_' {
             self.advance();
@@ -222,31 +224,30 @@ impl<'a> Scanner<'a> {
 
         self.advance();
 
-        self.input[begin_pos..self.position].to_string()
+        &self.input[begin_pos..self.position]
     }
 
-    fn get_number(&mut self) -> Token {
+    fn get_number(&mut self) -> Token<'a> {
+        let begin_pos = self.position;
         let loc = self.get_loc();
-        let mut num_str = String::new();
+        let mut count = 0;
         let mut is_floating = false;
 
-        while self.curr.is_digit(10) || self.curr == '.' {
+        while self.curr.is_ascii_digit() || self.curr == '.' {
             if self.curr == '.' {
                 if is_floating {
-                    return Token::new(TokenKind::Illegal, loc, num_str);
+                    return Token::new(TokenKind::Illegal, loc, &self.input[begin_pos..][..count]);
                 }
                 is_floating = true;
             }
-            num_str.push(self.curr);
+            count += 1;
             self.advance();
         }
 
         if is_floating {
-            
-            Token::new(TokenKind::Double, loc, num_str)
-            
+            Token::new(TokenKind::Double, loc, &self.input[begin_pos..][..count])
         } else {
-            Token::new(TokenKind::Integer, loc, num_str)
+            Token::new(TokenKind::Integer, loc, &self.input[begin_pos..][..count])
         }
     }
 }

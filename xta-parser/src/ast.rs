@@ -1,6 +1,6 @@
 use xta_lexer::token::Loc;
 
-pub type Block = Vec<Stmt>;
+pub type Block<'a> = Vec<Stmt<'a>>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum UnaryOpType {
@@ -39,50 +39,50 @@ pub enum BinaryOpType {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Stmt {
-    VarDecl(VarDeclStmt),
-    FunctionDecl(FunctionDeclStmt),
-    If(IfStmt),
-    Return(ReturnStmt),
-    Expr(Expr),
+pub enum Stmt<'a> {
+    VarDecl(VarDeclStmt<'a>),
+    FunctionDecl(FunctionDeclStmt<'a>),
+    If(IfStmt<'a>),
+    Return(ReturnStmt<'a>),
+    Expr(Expr<'a>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Expr {
-    Binary(BinaryExpr),
-    Unary(UnaryExpr),
-    Literal(LiteralExpr),
-    Identifier(IdentifierExpr),
-    Call(CallExpr),
+pub enum Expr<'a> {
+    Binary(BinaryExpr<'a>),
+    Unary(UnaryExpr<'a>),
+    Literal(LiteralExpr<'a>),
+    Identifier(IdentifierExpr<'a>),
+    Call(CallExpr<'a>),
 }
 
 
 // custom expressions
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct CallExpr {
-    pub name: String,
-    pub args: Vec<Expr>,
+pub struct CallExpr<'a> {
+    pub name: &'a str,
+    pub args: Vec<Expr<'a>>,
     pub loc: Loc,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct IdentifierExpr {
-    pub name: String,
+pub struct IdentifierExpr<'a> {
+    pub name: &'a str,
     pub loc: Loc
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct LiteralExpr {
-    pub value: Literal,
+pub struct LiteralExpr<'a> {
+    pub value: Literal<'a>,
     pub loc: Loc,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Literal {
+pub enum Literal<'a> {
     Integer(i64),
     Double(f64),
-    String(String),
+    String(&'a str),
     Boolean(bool),
     None,
 }
@@ -90,59 +90,59 @@ pub enum Literal {
 
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct BinaryExpr {
-    pub left: Box<Expr>,
-    pub right: Box<Expr>,
+pub struct BinaryExpr<'a> {
+    pub left: Box<Expr<'a>>,
+    pub right: Box<Expr<'a>>,
     pub operator: BinaryOpType,
     pub loc: Loc,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct UnaryExpr {
-    pub operand: Box<Expr>,
+pub struct UnaryExpr<'a> {
+    pub operand: Box<Expr<'a>>,
     pub operator: UnaryOpType,
     pub loc: Loc,
 }
 
 // custom statements
 #[derive(Debug, PartialEq, Clone)]
-pub struct VarDeclStmt {
-    pub name: String,
-    pub value: Option<Expr>,
+pub struct VarDeclStmt<'a> {
+    pub name: &'a str,
+    pub value: Option<Expr<'a>>,
     pub is_const: bool,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ReturnStmt {
-    pub value: Option<Expr>,
+pub struct ReturnStmt<'a> {
+    pub value: Option<Expr<'a>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct IfStmt {
-    pub condition: Expr,
-    pub then: Block,
-    pub elif_branch: Vec<ElifStmt>,
-    pub else_branch: Option<Block>,
+pub struct IfStmt<'a> {
+    pub condition: Expr<'a>,
+    pub then: Block<'a>,
+    pub elif_branch: Vec<ElifStmt<'a>>,
+    pub else_branch: Option<Block<'a>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ElifStmt {
-    pub condition: Expr,
-    pub then: Block,
+pub struct ElifStmt<'a> {
+    pub condition: Expr<'a>,
+    pub then: Block<'a>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct FunctionDeclStmt {
-    pub name: String,
-    pub params: Vec<Param>,
-    pub return_type: Option<String>,
-    pub body: Block,
+pub struct FunctionDeclStmt<'a> {
+    pub name: &'a str,
+    pub params: Vec<Param<'a>>,
+    pub return_type: Option<&'a str>,
+    pub body: Block<'a>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Param { 
-    pub name: String,
-    pub param_type: String,
+pub struct Param<'a> {
+    pub name: &'a str,
+    pub param_type: &'a str,
 }
 
 /// Implementations:
@@ -177,7 +177,7 @@ impl BinaryOpType {
     }
 }
 
-impl Expr {
+impl Expr<'_> {
     pub fn loc(&self) -> Loc {
         match self {
             Expr::Binary(expr) => expr.loc.clone(),

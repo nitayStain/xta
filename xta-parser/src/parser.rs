@@ -6,8 +6,8 @@ use super::ast::{BinaryExpr, BinaryOpType, Block, ElifStmt, Expr, FunctionDeclSt
 
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
-    token: Token,
-    pub errors: Vec<Error>,
+    token: Token<'a>,
+    pub errors: Vec<Error<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -21,7 +21,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_file(&mut self) -> Vec<Stmt> {
+    pub fn parse_file(&mut self) -> Vec<Stmt<'a>> {
         let mut stmts = Vec::new();
 
         while self.peek().kind != TokenKind::EOF {
@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
         stmts
     }
 
-    pub fn parse_statement(&mut self) -> Option<Stmt> {
+    pub fn parse_statement(&mut self) -> Option<Stmt<'a>> {
         let result = match self.peek().kind {
             TokenKind::Let => self.parse_variable_declaration(),
             TokenKind::Fn => self.parse_function(),
@@ -55,7 +55,7 @@ impl<'a> Parser<'a> {
 
     // Following the next syntax:
     // return <expression>;
-    pub fn parse_return(&mut self) -> Option<Stmt> {
+    pub fn parse_return(&mut self) -> Option<Stmt<'a>> {
         self.expect(TokenKind::Return)?;
         // expect any kind of void returns
         if self.peek().kind == TokenKind::Semicolon {
@@ -69,7 +69,7 @@ impl<'a> Parser<'a> {
 
     // Following the next syntax:
     // let <var name> = <expression>;
-    pub fn parse_variable_declaration(&mut self) -> Option<Stmt> {
+    pub fn parse_variable_declaration(&mut self) -> Option<Stmt<'a>> {
         self.expect(TokenKind::Let)?;
         let name = self.expect(TokenKind::Identifier)?;
 
@@ -82,14 +82,14 @@ impl<'a> Parser<'a> {
 
     // Following the next syntax:
     // if(a > b) { <body> } (optional) elif (...) { <body> } (optional) else { ... }
-    pub fn parse_if(&mut self) -> Option<Stmt> {
+    pub fn parse_if(&mut self) -> Option<Stmt<'a>> {
         self.expect(TokenKind::If)?;
         
         let condition = self.parse_expression(None)?; 
 
         let mut elif_branch = Vec::new();
 
-        let mut else_branch : Option<Block> = None;
+        let mut else_branch : Option<Block<'a>> = None;
 
         let then = self.parse_scope()?;
 
@@ -106,7 +106,7 @@ impl<'a> Parser<'a> {
         Some(Stmt::If(IfStmt { condition, then, elif_branch, else_branch}))
     }
 
-    pub fn parse_elif(&mut self) -> Option<ElifStmt> {
+    pub fn parse_elif(&mut self) -> Option<ElifStmt<'a>> {
         self.expect(TokenKind::Elif)?;
         
         let condition = self.parse_expression(None)?;
@@ -118,7 +118,7 @@ impl<'a> Parser<'a> {
 
     // Following the next syntax:
     // fn foo(a int, b int) -> int { <body> }
-    pub fn parse_function(&mut self) -> Option<Stmt> {
+    pub fn parse_function(&mut self) -> Option<Stmt<'a>> {
         self.expect(TokenKind::Fn)?;
         let name = self.expect(TokenKind::Identifier)?;
 
@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
         Some(Stmt::FunctionDecl(FunctionDeclStmt {name: name.text, params, body, return_type}))
     }
 
-    pub fn parse_expression(&mut self, prec: Option<i8>) -> Option<Expr> {
+    pub fn parse_expression(&mut self, prec: Option<i8>) -> Option<Expr<'a>> {
         let prec = prec.unwrap_or(-1);
 
         let mut lhs = self.parse_unary()?;
@@ -164,7 +164,7 @@ impl<'a> Parser<'a> {
         Some(lhs)
     }
 
-    pub fn parse_unary(&mut self) -> Option<Expr> {
+    pub fn parse_unary(&mut self) -> Option<Expr<'a>> {
         match self.peek().kind {
             TokenKind::Min => {
                 let loc = self.peek().loc.clone();
@@ -193,15 +193,15 @@ impl<'a> Parser<'a> {
 
 // Private functions
 impl <'a> Parser <'a> {
-    fn consume(&mut self) -> Token {
+    fn consume(&mut self) -> Token<'a> {
         std::mem::replace(&mut self.token, self.scanner.next_token())
     }
 
-    fn peek(&self) -> &Token {
+    fn peek(&self) -> &Token<'a> {
         &self.token
     }
 
-    fn expect(&mut self, kind: TokenKind) -> Option<Token> {
+    fn expect(&mut self, kind: TokenKind) -> Option<Token<'a>> {
         if self.token.kind == kind {
             Some(self.consume())
         } else {
@@ -215,7 +215,7 @@ impl <'a> Parser <'a> {
         }
     }
 
-    fn parse_function_params(&mut self) -> Option<Vec<Param>> {
+    fn parse_function_params(&mut self) -> Option<Vec<Param<'a>>> {
 
         self.expect(TokenKind::LeftParen)?;
         
@@ -228,7 +228,7 @@ impl <'a> Parser <'a> {
                 let param_name = self.expect(TokenKind::Identifier)?;
                 let param_type = self.expect(TokenKind::Identifier)?;
                 
-                params.push(Param { name: param_name.text.clone(), param_type: param_type.text.clone()});
+                params.push(Param { name: param_name.text, param_type: param_type.text});
 
                 if self.peek().kind == TokenKind::RightParen {
                     break;
@@ -252,7 +252,7 @@ impl <'a> Parser <'a> {
         Some(params)
     }
 
-    fn parse_scope(&mut self) -> Option<Vec<Stmt>> {
+    fn parse_scope(&mut self) -> Option<Vec<Stmt<'a>>> {
         self.expect(TokenKind::LeftBrace)?;
 
         let mut stmts = Vec::new();
@@ -269,7 +269,7 @@ impl <'a> Parser <'a> {
         Some(stmts)
     }
 
-    fn parse_primary(&mut self) -> Option<Expr> {
+    fn parse_primary(&mut self) -> Option<Expr<'a>> {
         match self.peek().kind {
             TokenKind::Integer => self.parse_integer(),
             TokenKind::Identifier => self.parse_identifier(),
@@ -308,7 +308,7 @@ impl <'a> Parser <'a> {
         }
     }
 
-    fn parse_reassign(&mut self, lhs: Expr) -> Option<Expr> {
+    fn parse_reassign(&mut self, lhs: Expr<'a>) -> Option<Expr<'a>> {
         self.expect(TokenKind::Assign)?;
         if ! matches!(lhs, Expr::Identifier(_)) {
             self.errors.push(Error::ExpectedId { loc: lhs.loc(), found: self.peek().clone() });
@@ -327,29 +327,29 @@ impl <'a> Parser <'a> {
     }
 
     // primary expression parsing
-    fn parse_integer(&mut self) -> Option<Expr> {
+    fn parse_integer(&mut self) -> Option<Expr<'a>> {
         let token = self.expect(TokenKind::Integer)?;
         Some(Expr::Literal(LiteralExpr { value: Literal::Integer(token.text.parse().unwrap()), loc: token.loc.clone() }))
     }
 
-    fn parse_string(&mut self) -> Option<Expr> {
+    fn parse_string(&mut self) -> Option<Expr<'a>> {
         let token = self.expect(TokenKind::String)?;
-        Some(Expr::Literal(LiteralExpr { value: Literal::String(token.text.clone()), loc: token.loc.clone() }))
+        Some(Expr::Literal(LiteralExpr { value: Literal::String(token.text), loc: token.loc.clone() }))
     }
 
-    fn parse_identifier(&mut self) -> Option<Expr> {
+    fn parse_identifier(&mut self) -> Option<Expr<'a>> {
         let token = self.expect(TokenKind::Identifier)?;
 
         if self.peek().kind == TokenKind::LeftParen {
             self.parse_fn_call(token)
         } else {
-            Some(Expr::Identifier(IdentifierExpr { name: token.text.clone(), loc: token.loc.clone() }))
+            Some(Expr::Identifier(IdentifierExpr { name: token.text, loc: token.loc.clone() }))
         }
 
     }
 
     // Parses any function call
-    fn parse_fn_call(&mut self, identifier: Token) -> Option<Expr> {
+    fn parse_fn_call(&mut self, identifier: Token<'a>) -> Option<Expr<'a>> {
         self.expect(TokenKind::LeftParen)?;
         let mut args = Vec::new();
         while self.peek().kind != TokenKind::RightParen {
@@ -373,15 +373,15 @@ impl <'a> Parser <'a> {
         }
 
         self.expect(TokenKind::RightParen)?;
-        Some(Expr::Call(CallExpr { name: identifier.text.clone(), args, loc: identifier.loc.clone() }))
+        Some(Expr::Call(CallExpr { name: identifier.text, args, loc: identifier.loc.clone() }))
     }
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-pub enum Error {
+pub enum Error<'a> {
     #[error("~ ({loc}) : Expected `{expected}`, found `{found}`")]
-    Expected { loc: Loc, expected: Token, found: Token },
+    Expected { loc: Loc, expected: Token<'a>, found: Token<'a> },
 
     #[error("~ ({loc}) : Expected an identifier, found `{found}`")]
-    ExpectedId {loc: Loc, found: Token }
+    ExpectedId {loc: Loc, found: Token<'a> }
 }

@@ -11,14 +11,14 @@ impl std::fmt::Display for Loc {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token {
+pub struct Token<'a> {
     pub kind: TokenKind,
     pub loc: Loc,
-    pub text: String
+    pub text: &'a str
 }
 
-impl Token {
-    pub fn new(kind: TokenKind, loc: Loc, text: String) -> Self {
+impl<'a> Token<'a> {
+    pub fn new(kind: TokenKind, loc: Loc, text: &'a str) -> Self {
         Self {
             kind,
             loc,
@@ -30,7 +30,7 @@ impl Token {
         Self {
             kind,
             loc: Loc { row: 0, col: 0 },
-            text: "".to_string(),
+            text: "",
         }
     }
 
@@ -116,7 +116,7 @@ pub enum TokenKind {
     EOF,
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.kind {
             // Arithmetic operators
