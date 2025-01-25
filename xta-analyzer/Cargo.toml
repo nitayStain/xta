@@ -1,0 +1,8 @@
+[package]
+name = "xta-analyzer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+xta-lexer = { path = "../xta-lexer" }
+xta-parser = { path = "../xta-parser" }

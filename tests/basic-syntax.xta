@@ -1,9 +1,17 @@
+fn add(a Int, b Int) -> Int {
+    return a + b;
+}
+
 fn foo(a Int, b Int) -> Int {
-    if(a > b) {}
-    elif(b == a) {}
-    else {}
+    if a > b {
+        return add(-b, a);
+    } else {
+        return add(b / 5, a ^ 25);
+    }
 }
 
 fn main() {
-
+    let a = 5;
+    let b = 10;
+    foo(a, b);
 }

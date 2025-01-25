@@ -110,6 +110,7 @@ pub enum TokenKind {
 
     // func def
     Fn,
+    Return,
 
     Illegal,
     EOF,
@@ -172,6 +173,7 @@ impl std::fmt::Display for Token {
             TokenKind::EOF => write!(f, "EOF"),
             TokenKind::For => write!(f, "for"),
             TokenKind::Fn => write!(f, "fn"),
+            TokenKind::Return => write!(f, "return"),
             TokenKind::If => write!(f, "if"),
             TokenKind::Let => write!(f, "let"),
             TokenKind::None => write!(f, "None"),
@@ -195,6 +197,7 @@ pub fn lookup_keyword(identifier: &str) -> TokenKind {
         "else" => TokenKind::Else,
 
         "fn" => TokenKind::Fn,
+        "return" => TokenKind::Return,
 
         "for" => TokenKind::For,
 

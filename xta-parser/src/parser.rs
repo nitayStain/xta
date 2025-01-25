@@ -1,5 +1,7 @@
 use xta_lexer::{scanner::Scanner, token::{Loc, Token, TokenKind}};
 
+use crate::ast::{CallExpr, ReturnStmt};
+
 use super::ast::{BinaryExpr, BinaryOpType, Block, ElifStmt, Expr, FunctionDeclStmt, IdentifierExpr, IfStmt, Literal, LiteralExpr, Param, Stmt, UnaryExpr, UnaryOpType, VarDeclStmt};
 
 pub struct Parser<'a> {
@@ -38,6 +40,7 @@ impl<'a> Parser<'a> {
             TokenKind::Let => self.parse_variable_declaration(),
             TokenKind::Fn => self.parse_function(),
             TokenKind::If => self.parse_if(),
+            TokenKind::Return => self.parse_return(),
             _ => Some(Stmt::Expr(self.parse_expression(None)?)),
         };
 
@@ -48,6 +51,20 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::Semicolon)?;
         result
+    }
+
+    // Following the next syntax:
+    // return <expression>;
+    pub fn parse_return(&mut self) -> Option<Stmt> {
+        self.expect(TokenKind::Return)?;
+        // expect any kind of void returns
+        if self.peek().kind == TokenKind::Semicolon {
+            return Some(Stmt::Return(ReturnStmt { value: None }));
+        }
+
+        // expect a value to be returned
+        let value = self.parse_expression(None)?;
+        Some(Stmt::Return(ReturnStmt { value: Some(value) }))
     }
 
     // Following the next syntax:
@@ -322,7 +339,41 @@ impl <'a> Parser <'a> {
 
     fn parse_identifier(&mut self) -> Option<Expr> {
         let token = self.expect(TokenKind::Identifier)?;
-        Some(Expr::Identifier(IdentifierExpr { name: token.text.clone(), loc: token.loc.clone() }))
+
+        if self.peek().kind == TokenKind::LeftParen {
+            self.parse_fn_call(token)
+        } else {
+            Some(Expr::Identifier(IdentifierExpr { name: token.text.clone(), loc: token.loc.clone() }))
+        }
+
+    }
+
+    // Parses any function call
+    fn parse_fn_call(&mut self, identifier: Token) -> Option<Expr> {
+        self.expect(TokenKind::LeftParen)?;
+        let mut args = Vec::new();
+        while self.peek().kind != TokenKind::RightParen {
+            let arg = self.parse_expression(None)?;
+            args.push(arg);
+
+            if self.peek().kind == TokenKind::RightParen {
+                break;
+            }
+
+            if self.peek().kind == TokenKind::Comma {
+                self.consume();
+                continue;
+            } else {
+                self.errors.push(Error::Expected {
+                    loc: self.peek().loc.clone(),
+                    expected: Token::from_kind(TokenKind::Comma),
+                    found: self.peek().clone(),
+                });
+            }
+        }
+
+        self.expect(TokenKind::RightParen)?;
+        Some(Expr::Call(CallExpr { name: identifier.text.clone(), args, loc: identifier.loc.clone() }))
     }
 }
 

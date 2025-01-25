@@ -3,4 +3,4 @@ members = [
     "xtac",
     "xta-lexer",
     "xta-parser"
-]
+, "xta-analyzer"]

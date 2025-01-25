@@ -43,6 +43,7 @@ pub enum Stmt {
     VarDecl(VarDeclStmt),
     FunctionDecl(FunctionDeclStmt),
     If(IfStmt),
+    Return(ReturnStmt),
     Expr(Expr),
 }
 
@@ -52,10 +53,18 @@ pub enum Expr {
     Unary(UnaryExpr),
     Literal(LiteralExpr),
     Identifier(IdentifierExpr),
+    Call(CallExpr),
 }
 
 
 // custom expressions
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct CallExpr {
+    pub name: String,
+    pub args: Vec<Expr>,
+    pub loc: Loc,
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct IdentifierExpr {
@@ -101,6 +110,11 @@ pub struct VarDeclStmt {
     pub name: String,
     pub value: Option<Expr>,
     pub is_const: bool,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ReturnStmt {
+    pub value: Option<Expr>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -170,6 +184,7 @@ impl Expr {
             Expr::Unary(expr) => expr.loc.clone(),
             Expr::Literal(expr) => expr.loc.clone(),
             Expr::Identifier(expr) => expr.loc.clone(),
+            Expr::Call(expr) => expr.loc.clone(),
         }
     }
 }
