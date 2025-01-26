@@ -4,3 +4,5 @@ members = [
     "xta-lexer",
     "xta-parser"
 , "xta-analyzer"]
+
+resolver = "2"

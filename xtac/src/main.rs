@@ -21,7 +21,7 @@ fn main() {
             }
             match fs::read_to_string(path) {
                 Ok(content) => {
-                    let mut scanner = Scanner::new(&content);
+                    let scanner = Scanner::new(&content);
                     let mut parser = Parser::new(scanner);
 
                     let start = Instant::now();

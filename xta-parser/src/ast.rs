@@ -145,7 +145,7 @@ pub struct Param<'a> {
     pub param_type: &'a str,
 }
 
-/// Implementations:
+// Implementations:
 
 impl BinaryOpType {
     pub fn prec(&self) -> u8 {

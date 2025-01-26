@@ -5,6 +5,7 @@ pub struct Scanner<'a> {
     position: usize, // the position that displays the current char
     offset: usize,   // a position of which the next char would be
     line: usize,
+    col: usize,
     curr: char,
 }
 
@@ -17,6 +18,7 @@ impl<'a> Scanner<'a> {
             line: 0,
             offset: 0,
             curr: '\0',
+            col: 0,
         };
         scanner.advance();
         scanner
@@ -165,7 +167,7 @@ impl<'a> Scanner<'a> {
 
     fn get_loc(&mut self) -> Loc {
         Loc {
-            col: self.position as u32,
+            col: self.col as u32,
             row: self.line as u32,
         }
     }
@@ -175,6 +177,7 @@ impl<'a> Scanner<'a> {
         while self.curr.is_whitespace() {
             if self.curr == '\n' {
                 self.line += 1;
+                self.col = 0;
             }
             self.advance();
         }
@@ -186,6 +189,7 @@ impl<'a> Scanner<'a> {
 
         self.position = self.offset;
         self.offset += 1;
+        self.col += 1;
     }
 
     // peek next char

@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 xta-lexer = { path = "../xta-lexer" }
 xta-parser = { path = "../xta-parser" }
+thiserror = "2.0.9"
